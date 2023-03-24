@@ -1,3 +1,4 @@
 common --enable_bzlmod
+common --nocheck_visibility
 
 build --cxxopt=-std=c++17
