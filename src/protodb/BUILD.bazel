@@ -1,0 +1,74 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+cc_library(
+    name = "actions",
+    srcs = [
+        "actions.cc",
+    ],
+    hdrs = [
+        "actions.h",
+    ],
+    include_prefix = "google/protobuf/protodb",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "command_line_parse",
+    srcs = [
+        "command_line_parse.cc",
+        "guess.cc",
+        "protodb.cc",
+    ],
+    hdrs = [
+        "command_line_parse.h",
+        "guess.h",
+        "protodb.h",
+    ],
+    include_prefix = "google/protobuf/protodb",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":actions",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+    ],
+)
+
+cc_library(
+    name = "protodb_lib",
+    visibility = [
+        "//:__pkg__",
+        "//pkg:__pkg__",
+    ],
+    deps = [
+        ":command_line_parse",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_absl//absl/log:initialize",
+    ],
+)
+
+cc_binary(
+    name = "protodb",
+    srcs = [
+        "main.cc",
+    ],
+    deps = [
+        ":protodb_lib",
+    ],
+)
+
+
+
