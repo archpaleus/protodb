@@ -78,12 +78,6 @@ void DebugLog(std::string_view msg) {
   std::cerr << msg << std::endl;
 }
 
-#if 0
-void AddTrailingSlash(std::string* path) {
-  if (!path->empty() && path->at(path->size() - 1) != '/') {
-    path->push_back('/');
-  }
-}
 
 bool VerifyDirectoryExists(const std::string& path) {
   if (path.empty()) return true;
@@ -121,9 +115,6 @@ bool TryCreateParentDirectory(const std::string& prefix,
 
   return true;
 }
-
-#endif
-
 
 // Get the absolute path of this protoc binary.
 bool GetProtocAbsolutePath(std::string* path) {
@@ -229,9 +220,7 @@ CommandLineInterface::CommandLineInterface() {
 
 CommandLineInterface::~CommandLineInterface() {}
 
-
 int CommandLineInterface::Run(int argc, const char* const argv[]) {
-
   switch (ParseArguments(argc, argv)) {
     case PARSE_ARGUMENT_DONE_AND_EXIT:
       return 0;
@@ -240,20 +229,6 @@ int CommandLineInterface::Run(int argc, const char* const argv[]) {
     case PARSE_ARGUMENT_DONE_AND_CONTINUE:
       break;
   }
-
-#if 0
-  std::vector<const FileDescriptor*> parsed_files;
-  std::unique_ptr<CustomSourceTree> custom_source_tree;
-  std::unique_ptr<DescriptorPool> descriptor_pool;
-
-  // The SimpleDescriptorDatabases here are the constituents of the
-  // MergedDescriptorDatabase descriptor_set_in_database, so this vector is for
-  // managing their lifetimes. Its scope should match descriptor_set_in_database
-  std::vector<std::unique_ptr<SimpleDescriptorDatabase>> databases_per_descriptor_set;
-  std::unique_ptr<MergedDescriptorDatabase> descriptor_set_in_database;
-  std::unique_ptr<SourceTreeDescriptorDatabase> source_tree_database;
-#endif
-
   return 0;
 }
 
@@ -261,7 +236,6 @@ bool CommandLineInterface::InitializeCustomSourceTree(
     std::vector<std::string> input_params,
     CustomSourceTree* source_tree, DescriptorDatabase* fallback_database) {
   std::vector<std::pair<std::string, std::string>> proto_path_; 
-
 
   return true;
 }
@@ -782,10 +756,11 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     return PARSE_ARGUMENT_DONE_AND_EXIT;  
   } else if (command == "info") {
     {
-      auto db = source_tree_database.get();
-      std::vector<std::string> message_names;
-      db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in " << parsed_files.size() << " parsed files (" << input_files.size() << " input file(s))" << std::endl;
+      int messages = 0;
+      for (const auto& fd : parsed_files) {
+        messages += fd->message_type_count();
+      }
+      std::cout << messages << " top-level message(s) in " << parsed_files.size() << " parsed files (" << input_files.size() << " input file(s))" << std::endl;
     }
     {
       auto db = protodb->database();

@@ -97,7 +97,7 @@ void DebugLog(std::string_view msg) {
   std::cerr << msg << std::endl;
 }
 
-std::string WireTypeLetter(int wire_type) {
+static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
     case 0: return "V";
     case 1: return "L";
@@ -108,7 +108,7 @@ std::string WireTypeLetter(int wire_type) {
     default: return absl::StrCat(wire_type);
   }
 }
-std::string WireTypeName(int wire_type) {
+static std::string WireTypeName(int wire_type) {
   switch (wire_type) {
     case 0: return "VARINT";
     case 1: return "I64";

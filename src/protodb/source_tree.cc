@@ -170,13 +170,10 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
                                       std::string* shadowing_disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << disk_file;
 
+  const std::string canonical_disk_file = CanonicalizePath(disk_file);
+
   int mapping_index = -1;
-  std::string canonical_disk_file = CanonicalizePath(disk_file);
-
   for (int i = 0; i < input_roots_.size(); i++) {
-    //const std::string_view disk_path = input_roots_[i].disk_path;
-    //const std::string_view virtual_path_path = input_roots_[i].virtual_path;
-
     // Apply the mapping in reverse.
     if (ApplyMapping(canonical_disk_file, input_roots_[i].disk_path,
                      input_roots_[i].virtual_path, virtual_file)) {
@@ -186,24 +183,10 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
       break;
     }
   }
-
   if (mapping_index == -1) {
     return NO_MAPPING;
   }
 
-#if 0
-  // Iterate through all mappings with higher precedence and verify that none
-  // of them map this file to some other existing file.
-  for (int i = 0; i < mapping_index; i++) {
-    if (ApplyMapping(*virtual_file, mappings_[i].virtual_path,
-                     mappings_[i].disk_path, shadowing_disk_file)) {
-      if (access(shadowing_disk_file->c_str(), F_OK) >= 0) {
-        // File exists.
-        return SHADOWED;
-      }
-    }
-  }
-#endif
   shadowing_disk_file->clear();
 
   // Verify that we can open the file.  Note that this also has the side-effect
@@ -213,8 +196,6 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
   if (stream == nullptr) {
     return CANNOT_OPEN;
   }
-
-  ABSL_LOG(INFO) << "success";
   return SUCCESS;
 }
 
