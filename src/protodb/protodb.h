@@ -18,9 +18,7 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
-#include "google/protobuf/protodb/actions.h"
 #include "google/protobuf/repeated_field.h"
-
 
 namespace google {
 namespace protobuf {
@@ -37,30 +35,28 @@ class ProtoDb {
   DescriptorDatabase* database() const { return merged_database_.get(); }
 
   bool LoadDatabase(const std::string& _path) {
-     protodb_path_ = std::filesystem::path{_path};
-  if (!std::filesystem::exists(protodb_path_)) {
-     return false;
-  }
-   if (!std::filesystem::is_directory(protodb_path_)) {
-      std::cerr << "path to protodb is not a directory: " << _path << std::endl; 
-      return false;
-   }
-
-   for (const auto& dir_entry : std::filesystem::directory_iterator(protodb_path_)) {
-      const std::string filename = dir_entry.path().filename();
-      if (filename.find(".") == 0) {
-        // Skip any files that start with period.
-        continue;
-      }
-      std::unique_ptr<SimpleDescriptorDatabase> database_for_descriptor_set =
-          PopulateSingleSimpleDescriptorDatabase(dir_entry.path());
-      if (!database_for_descriptor_set) {
-        std::cout << "error reading " << filename << std::endl;
-        return false;
-      }
-      databases_per_descriptor_set_.push_back(
-          std::move(database_for_descriptor_set));
-   }
+    protodb_path_ = std::filesystem::path{_path};
+    if (std::filesystem::exists(protodb_path_)) {
+       if (!std::filesystem::is_directory(protodb_path_)) {
+          std::cerr << "path to protodb is not a directory: " << _path << std::endl; 
+       } else {
+          for (const auto& dir_entry : std::filesystem::directory_iterator(protodb_path_)) {
+             const std::string filename = dir_entry.path().filename();
+             if (filename.find(".") == 0) {
+                // Skip any files that start with period.
+                continue;
+             }
+             std::unique_ptr<SimpleDescriptorDatabase> database_for_descriptor_set =
+                   PopulateSingleSimpleDescriptorDatabase(dir_entry.path());
+             if (!database_for_descriptor_set) {
+                std::cout << "error reading " << filename << std::endl;
+                return false;
+             }
+             databases_per_descriptor_set_.push_back(
+                   std::move(database_for_descriptor_set));
+          }
+       }
+    }
 
     std::vector<DescriptorDatabase*> raw_databases_per_descriptor_set;
     raw_databases_per_descriptor_set.reserve(

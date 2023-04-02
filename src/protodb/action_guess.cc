@@ -1,4 +1,4 @@
-#include "google/protobuf/protodb/guess.h"
+#include "protodb/action_guess.h"
 
 #include "google/protobuf/stubs/platform_macros.h"
 
@@ -45,9 +45,9 @@
 #include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/protodb/protodb.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
+#include "protodb/protodb.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -55,6 +55,8 @@
 
 namespace google {
 namespace protobuf {
+namespace protodb {
+
 
 namespace {
 
@@ -430,7 +432,7 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
   return true;
 }
 
-bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
+bool GuessX(const absl::Cord& data, const protodb::ProtoDb& protodb,
            std::set<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(protodb.database(), nullptr);
   GuessContext context{protodb.database(), pool.get()};
@@ -469,5 +471,6 @@ bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
   return true;
 }
 
+} // namespace
 } // namespace
 } // namespace

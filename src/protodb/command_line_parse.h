@@ -18,8 +18,11 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
-#include "google/protobuf/protodb/actions.h"
 #include "google/protobuf/repeated_field.h"
+
+#include "protodb/action_guess.h"
+#include "protodb/action_show.h"
+#include "protodb/source_tree.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -28,7 +31,7 @@ namespace google {
 namespace protobuf {
 namespace protodb {
 
-using DiskSourceTree = compiler::DiskSourceTree;
+//using compiler::CustomSourceTree;
 
 class ProtoDb;
 
@@ -74,16 +77,24 @@ class CommandLineInterface {
   bool Guess(const ProtoDb& pool, std::span<std::string> params);
   bool Show(const ProtoDb& pool, std::span<std::string> params);
 
+
+  bool FindVirtualFileInProtoPath(
+      CustomSourceTree* source_tree, std::string input_file,
+      std::string* disk_file); 
+
   // Remaps the proto file so that it is relative to one of the directories
   // in proto_path_.  Returns false if an error occurred.
-  bool MakeProtoProtoPathRelative(DiskSourceTree* source_tree,
+  bool MakeProtoProtoPathRelative(CustomSourceTree* source_tree,
                                   std::string* proto,
                                   DescriptorDatabase* fallback_database);
 
-  // Remaps each file in input_files_ so that it is relative to one of the
-  // directories in proto_path_.  Returns false if an error occurred.
-  bool MakeInputsBeProtoPathRelative(DiskSourceTree* source_tree,
-                                     DescriptorDatabase* fallback_database);
+  // Given a set of input params, parse each one and add it to the SourceTree.
+  // For each file, we return a list of the virtual path to it.
+  bool ProcessInputPaths(
+      std::vector<std::string> input_params,
+      CustomSourceTree* source_tree,
+      DescriptorDatabase* fallback_database,
+      std::vector<std::string>* virtual_files);
 
   // Return status for ParseArguments() and InterpretArgument().
   enum ParseArgumentStatus {
@@ -121,26 +132,26 @@ class CommandLineInterface {
   void PrintHelpText();
 
   // Loads proto_path_ into the provided source_tree.
-  bool InitializeDiskSourceTree(DiskSourceTree* source_tree,
-                                DescriptorDatabase* fallback_database);
+  bool InitializeCustomSourceTree(
+      std::vector<std::string> input_params,
+      CustomSourceTree* source_tree,
+      DescriptorDatabase* fallback_database);
 
   // Verify that all the input files exist in the given database.
   bool VerifyInputFilesInDescriptors(DescriptorDatabase* fallback_database);
 
   // Parses input_files_ into parsed_files
-  bool ParseInputFiles(DescriptorPool* descriptor_pool,
-                       DiskSourceTree* source_tree,
-                       std::vector<const FileDescriptor*>* parsed_files);
+  bool ParseInputFiles(
+      std::vector<std::string> input_files,
+      DescriptorPool* descriptor_pool,
+      CustomSourceTree* source_tree,
+      std::vector<const FileDescriptor*>* parsed_files);
 
 
   // -----------------------------------------------------------------
 
   // The name of the executable as invoked (i.e. argv[0]).
   std::string executable_name_;
-
-  // Search path for proto files.
-  std::vector<std::pair<std::string, std::string>> proto_path_; 
-  std::vector<std::string> input_files_;  // Names of the input proto files.
 };
 
 }  // namespace protodb

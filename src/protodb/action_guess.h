@@ -1,5 +1,5 @@
-#ifndef GOOGLE_PROTOBUF_GUESS_H__
-#define GOOGLE_PROTOBUF_GUESS_H__
+#ifndef PROTODB_ACTION_GUESS_H__
+#define PROTODB_ACTION_GUESS_H__
 
 #include <cstdint>
 #include <functional>
@@ -18,18 +18,18 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
-#include "google/protobuf/protodb/actions.h"
-#include "google/protobuf/protodb/protodb.h"
 #include "google/protobuf/repeated_field.h"
+#include "protodb/protodb.h"
 
 namespace google {
 namespace protobuf {
+namespace protodb {
 
-bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
-           std::set<std::string>* matches);
+bool GuessX(const absl::Cord& data, const protodb::ProtoDb& protodb,
+            std::set<std::string>* matches);
 
-
+} // namespace protodb
 } // namespace protobuf
 } // namespace google
 
-#endif // GOOGLE_PROTOBUF_GUESS_H__
+#endif // PROTODB_ACTION_GUESS_H__
