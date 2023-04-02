@@ -75,7 +75,6 @@ class CommandLineInterface {
   bool Decode(const ProtoDb& pool, std::string codec_type);
   bool DecodeRaw(const ProtoDb& pool, std::string codec_type);
   bool Guess(const ProtoDb& pool, std::span<std::string> params);
-  bool Show(const ProtoDb& pool, std::span<std::string> params);
 
 
   bool FindVirtualFileInProtoPath(
