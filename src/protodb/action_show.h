@@ -1,6 +1,7 @@
 #ifndef PROTODB_ACTION_SHOW_H__
 #define PROTODB_ACTION_SHOW_H__
 
+#include <string>
 #include <span>
 
 namespace google {

@@ -780,24 +780,7 @@ Action:
 
 
 
-bool CommandLineInterface::Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
-  absl::Cord cord;
-  if (args.size() == 1) {
-    std::cout << "Reading from "  << args[0] << std::endl;
-    auto fp = fopen(args[0].c_str(), "rb");
-    int fd = fileno(fp);
-    io::FileInputStream in(fd);
-    in.ReadCord(&cord, 1 << 20);
-  } else {
-    io::FileInputStream in(STDIN_FILENO);
-    in.ReadCord(&cord, 1 << 20);
-  }
-  
-  std::set<std::string> matches;
-  google::protobuf::protodb::GuessX(cord, protodb, &matches);
 
-  return true;
-}
 
 
 bool CommandLineInterface::Encode(const ProtoDb& protodb, std::span<std::string> params) {

@@ -25,8 +25,7 @@ namespace google {
 namespace protobuf {
 namespace protodb {
 
-bool GuessX(const absl::Cord& data, const protodb::ProtoDb& protodb,
-            std::set<std::string>* matches);
+bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args);
 
 } // namespace protodb
 } // namespace protobuf

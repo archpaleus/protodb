@@ -34,7 +34,7 @@ class ProtoDb {
 
   DescriptorDatabase* database() const { return merged_database_.get(); }
 
-  bool LoadDatabase(const std::string& _path);
+  bool LoadDatabase(const std::string& path);
 
  protected:
   std::filesystem::path protodb_path_;

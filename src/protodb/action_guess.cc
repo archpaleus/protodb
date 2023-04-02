@@ -432,7 +432,7 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
   return true;
 }
 
-bool GuessX(const absl::Cord& data, const protodb::ProtoDb& protodb,
+bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
            std::set<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(protodb.database(), nullptr);
   GuessContext context{protodb.database(), pool.get()};
@@ -467,6 +467,25 @@ bool GuessX(const absl::Cord& data, const protodb::ProtoDb& protodb,
       auto &[score, message] = *scores.rbegin();
       std::cout << message << std::endl;
   }
+
+  return true;
+}
+
+bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
+  absl::Cord cord;
+  if (args.size() == 1) {
+    std::cout << "Reading from "  << args[0] << std::endl;
+    auto fp = fopen(args[0].c_str(), "rb");
+    int fd = fileno(fp);
+    io::FileInputStream in(fd);
+    in.ReadCord(&cord, 1 << 20);
+  } else {
+    io::FileInputStream in(STDIN_FILENO);
+    in.ReadCord(&cord, 1 << 20);
+  }
+  
+  std::set<std::string> matches;
+  google::protobuf::protodb::Guess(cord, protodb, &matches);
 
   return true;
 }
