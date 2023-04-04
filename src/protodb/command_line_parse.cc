@@ -49,6 +49,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 
+#include "protodb/action_explain.h"
 #include "protodb/action_guess.h"
 #include "protodb/action_show.h"
 #include "protodb/error_printer.h"
@@ -718,17 +719,18 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     return PARSE_ARGUMENT_DONE_AND_EXIT;  
   } else if (command == "info") {
     {
+      auto db = protodb->database();
+      std::vector<std::string> message_names;
+      db->FindAllMessageNames(&message_names);
+      std::cout << message_names.size() << " message(s) in protodb" << std::endl;
+    }
+
+    {
       int messages = 0;
       for (const auto& fd : parsed_files) {
         messages += fd->message_type_count();
       }
       std::cout << messages << " top-level message(s) in " << parsed_files.size() << " parsed files (" << input_files.size() << " input file(s))" << std::endl;
-    }
-    {
-      auto db = protodb->database();
-      std::vector<std::string> message_names;
-      db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in protodb" << std::endl;
     }
   } else if (command == "add") {
     auto micros = absl::GetCurrentTimeNanos() / 1000;
@@ -747,6 +749,8 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
       decode_type = "google.protobuf.Empty";
     }
     Decode(*protodb.get(), decode_type);
+  } else if (command == "inspect" || command == "explain") {
+    Explain(*protodb.get(), params);
   } else if (command == "print") {
 
   } else if (command == "show") {
@@ -810,7 +814,7 @@ bool CommandLineInterface::Encode(const ProtoDb& protodb, std::span<std::string>
 
 bool CommandLineInterface::Decode(const ProtoDb& protodb, std::string codec_type) {
   auto descriptor_pool = std::make_unique<DescriptorPool>(
-    protodb.database(), nullptr);
+      protodb.database(), nullptr);
 
   const Descriptor* type = descriptor_pool->FindMessageTypeByName(codec_type);
   if (type == nullptr) {

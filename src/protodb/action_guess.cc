@@ -83,8 +83,6 @@ struct GuessContext {
   DescriptorPool* descriptor_pool_;
   const int depth_;
   std::set<std::string> candidates_;
-  std::set<std::string> matches_;
-  std::set<std::string> rejects_;
   int score_ = 0;
 };
 
@@ -327,7 +325,6 @@ bool FindMessagesMatchingFingerprint(
     const std::vector<std::string>& candidates,
     const std::vector<FieldFingerprint>& field_fingerprints,
     std::vector<std::string>* matches) {
-  ABSL_CHECK_EQ(context->matches_.size(), 0);
 
   for (const auto& message_name : candidates) {
     const Descriptor* descriptor = context->descriptor_pool_->FindMessageTypeByName(message_name);

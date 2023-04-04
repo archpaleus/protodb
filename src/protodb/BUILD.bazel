@@ -4,6 +4,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 cc_library(
     name = "command_line_parse",
     srcs = [
+        "action_explain.cc",
         "action_guess.cc",
         "action_show.cc",
         "command_line_parse.cc",
@@ -11,6 +12,7 @@ cc_library(
         "source_tree.cc",
     ],
     hdrs = [
+        "action_explain.h",
         "action_guess.h",
         "action_show.h",
         "command_line_parse.h",
