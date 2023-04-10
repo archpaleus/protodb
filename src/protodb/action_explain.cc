@@ -274,6 +274,11 @@ struct ExplainPrinter {
         std::cout << field.message_type << " ";
       }
       std::cout << field.name << ":";
+      if (field.chunk_segment->length == 1) {
+        std::cout << " (" << field.chunk_segment->length << " byte)";
+      } else if (field.chunk_segment->length > 1) {
+        std::cout << " (" << field.chunk_segment->length << " bytes)";
+      }
     } else if (field.is_valid_ascii) {
       std::cout << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
     } else {
