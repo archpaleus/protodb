@@ -262,41 +262,41 @@ struct ExplainPrinter {
   }
   void Emit(const Tag& tag, const Field& field) {
     std::string data = absl::StrCat(tag.segment.snippet, field.segment.snippet);
-    std::cerr << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
+    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]") << " "
               << indent_spacing()
               << std::setw(4) << tag.field_number << " : ";
     if (field.is_valid_message) {
       if (!field.cpp_type.empty()) {
-        std::cerr << field.cpp_type << " ";
+        std::cout << field.cpp_type << " ";
       }
       if (!field.message_type.empty()) {
-        std::cerr << field.message_type << " ";
+        std::cout << field.message_type << " ";
       }
-      std::cerr << field.name << ":";
+      std::cout << field.name << ":";
     } else if (field.is_valid_ascii) {
-      std::cerr << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
+      std::cout << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
     } else {
-      std::cerr << field.cpp_type << " " << field.name << " = " << field.value;
+      std::cout << field.cpp_type << " " << field.name << " = " << field.value;
     }
-    std::cerr << std::endl;
+    std::cout << std::endl;
   }
   void EmitInvalidTag(const Segment& segment) {
     // TODO: add a message with the reason why it failed
-    std::cerr << " FAILED TO PARSE TAG: " << std::endl;
-    std::cerr << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
+    std::cout << " FAILED TO PARSE TAG: " << std::endl;
+    std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(segment.snippet, 8), "]") << std::endl;
   }
   void EmitInvalidField(const Tag& tag, const Segment& segment) {
     // TODO: add a message with the reason why it failed
-    std::cerr << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
+    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(tag.segment.snippet, 8), "]") << " "
               << indent_spacing()
               << std::setw(4) << tag.field_number << " : "
               << WireTypeName(tag.wire_type)
               <<  std::endl;
-    std::cerr << " FAILED TO PARSE FIELD: " << std::endl;
-    std::cerr << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
+    std::cout << " FAILED TO PARSE FIELD: " << std::endl;
+    std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(segment.snippet, 8), "]") << std::endl;
   }
  protected:
@@ -443,7 +443,7 @@ std::optional<Field> ReadField_VarInt(const ScanContext& context, const Tag& tag
     .segment = field_mark.segment(),
     .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
     .name = field_descriptor ? field_descriptor->name() : "<varint>",
-    .value = absl::StrCat(varint),
+    .value = absl::StrCat(varint),   // TODO: provide different interpretations: zig-zag
   };
 }
 
@@ -459,7 +459,7 @@ std::optional<Field> ReadField_Fixed32(const ScanContext& context, const Tag& ta
     .segment = field_mark.segment(),
     .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
     .name = field_descriptor ? field_descriptor->name() : "<fixed32>",
-    .value = absl::StrCat(fixed32),
+    .value = absl::StrCat(fixed32),   // TODO: provide different interpretations: float
   };
 }
 
@@ -475,7 +475,7 @@ std::optional<Field> ReadField_Fixed64(const ScanContext& context, const Tag& ta
     .segment = field_mark.segment(),
     .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
     .name = field_descriptor ? field_descriptor->name() : "<fixed64>",
-    .value = absl::StrCat(fixed64),
+    .value = absl::StrCat(fixed64),   // TODO: provide different interpretations: double
   };
 }
 
