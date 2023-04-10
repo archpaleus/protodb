@@ -228,19 +228,21 @@ struct Tag {
 };
 
 struct Field {
+  // This is the entire field, includes of the "length" and "data"
+  // portions of a length-delimited field.
   const Segment segment;
   const std::string cpp_type;
   const std::string message_type;
   const std::string name;
   const std::string value;
 
+  // This segment is only the "data" portion of the field for
+  // length-delimited fields.
   const std::optional<Segment> chunk_segment;
 
-  // For length-delimited fields, check to see if any of the
-  // following are true.
   bool is_valid_message = false;
-  bool is_valid_ut8 = false;
   bool is_valid_ascii = false;
+  //bool is_valid_ut8 = false;  // TODO
 };
 
 struct ExplainPrinter {
@@ -255,21 +257,23 @@ struct ExplainPrinter {
 
   std::string indent_spacing() { 
     std::string spacing;
-    for (int i = 0; i < indent_; ++i) spacing += " ";
+    for (int i = 0; i < indent_; ++i) spacing += "  ";
     return spacing;
   }
   void Emit(Tag& tag, Field& field) {
     std::string data = absl::StrCat(tag.segment.snippet, field.segment.snippet).substr(0, 8);
     std::cerr << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
-              << std::setw(20) << absl::StrCat("[", BinToHex(data, 6), "]") << " "
+              << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]") << " "
               << indent_spacing()
-              << std::setw(4) << tag.field_number << ": ";
+              << std::setw(4) << tag.field_number << " : ";
     if (field.is_valid_message) {
-      std::cerr << field.cpp_type;
-      if (!field.message_type.empty()) {
-        std::cerr << " " << field.message_type;
+      if (!field.cpp_type.empty()) {
+        std::cerr << field.cpp_type << " ";
       }
-      std::cerr << " " << field.name << ":";
+      if (!field.message_type.empty()) {
+        std::cerr << field.message_type << " ";
+      }
+      std::cerr << field.name << ":";
     } else if (field.is_valid_ascii) {
       std::cerr << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
     } else {
@@ -303,13 +307,6 @@ std::optional<Tag> ReadTag(const ScanContext& context, const Descriptor* descrip
 
   // Look for the field in the descriptor.  Failure here is not terminal.
   auto* field_descriptor = descriptor->FindFieldByNumber(field_number);
-  if (field_descriptor) {
-    //std::cerr << field_number << ": " << field_descriptor->name() << " "
-    //          << (field_descriptor->type_name()) << std::endl;
-  } else {
-    //std::cerr << " unknown field: " << field_number << std::endl;
-  }
-
   return Tag{
     .segment = tag_mark.segment(),
     .tag = tag,
