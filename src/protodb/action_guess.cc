@@ -238,7 +238,13 @@ bool ScanFields(const GuessContext& context, const absl::Cord& cord, std::vector
          field_info.is_valid_message = true;
       } 
 
+      uint32_t startpoint = cis.CurrentPosition();
       if (!cis.Skip(length)) {
+        auto move = cis.CurrentPosition() - startpoint;
+        std::cout << " rle_start " << field_info.rle_start
+                  << " rle_end " << field_info.rle_end << std::endl;
+        std::cout << " moved " << move << " bytes to " << cis.CurrentPosition() << std::endl;
+        std::cout << " remaining " << cis.BytesUntilTotalBytesLimit() << std::endl;
         std::cout << " failed to skip " << length << " bytes " << std::endl;
         return false;
       }
@@ -390,6 +396,12 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
 
     context->score_ += 1;
 
+    if (wire_type != internal::WireFormatLite::WIRETYPE_START_GROUP ||
+        wire_type != internal::WireFormatLite::WIRETYPE_END_GROUP) {
+      internal::WireFormatLite::SkipField(&cis, tag);
+      continue;
+    }
+    
     if (wire_type != internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       // Assume that the field fingerprint check knows this is a valid
       // non-message type and continue scanning.

@@ -733,10 +733,14 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
       std::cout << messages << " top-level message(s) in " << parsed_files.size() << " parsed files (" << input_files.size() << " input file(s))" << std::endl;
     }
   } else if (command == "add") {
-    auto micros = absl::GetCurrentTimeNanos() / 1000;
-    std::string output_path = absl::StrCat(protodb_path, "/added_", micros, ".pb");
-    WriteFilesToDescriptorSet(output_path, true, parsed_files);
-    std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to " << output_path << std::endl;
+    if (parsed_files.size() > 0) {
+      auto micros = absl::GetCurrentTimeNanos() / 1000 / 1000;
+      std::string output_path = absl::StrCat(protodb_path, "/added_", micros, ".pb");
+      WriteFilesToDescriptorSet(output_path, true, parsed_files);
+      std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to " << output_path << std::endl;
+    } else {
+      std::cerr << "No files parsed." << std::endl;
+    }
   } else if (command == "guess") {
     Guess(*protodb.get(), params);
   } else if (command == "encode") {
@@ -750,10 +754,13 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     }
     Decode(*protodb.get(), decode_type);
   } else if (command == "inspect" || command == "explain") {
-    Explain(*protodb.get(), params);
+    if (!Explain(*protodb.get(), params)) {
+      std::cerr << "error reading input" << std::endl;
+    }
   } else if (command == "print") {
 
   } else if (command == "show") {
+    ABSL_CHECK(false);
     Show(*protodb.get(), params);
   } else {
     std::cerr << "Unexpected command: " << command << std::endl;
