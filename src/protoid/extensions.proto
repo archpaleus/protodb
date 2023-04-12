@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+import "google/protobuf/descriptor.proto";
+import "protoid/proto_id.proto";
+
+
+extend google.protobuf.MessageOptions {
+  optional ProtoId id = 510000;
+}
