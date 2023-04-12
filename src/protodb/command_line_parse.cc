@@ -760,7 +760,6 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   } else if (command == "print") {
 
   } else if (command == "show") {
-    ABSL_CHECK(false);
     Show(*protodb.get(), params);
   } else {
     std::cerr << "Unexpected command: " << command << std::endl;
