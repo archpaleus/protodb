@@ -1,6 +1,4 @@
-#include "protodb/action_explain.h"
-
-#include "google/protobuf/stubs/platform_macros.h"
+#include "protodb/actions/action_explain.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -21,17 +19,10 @@
 #include <utility>
 #include <vector>
 
-#if defined(__APPLE__)
-#include <mach-o/dyld.h>
-#elif defined(__FreeBSD__)
-#include <sys/sysctl.h>
-#endif
+#include "protodb/io/printer.h"
+#include "protodb/io/color_printer.h"
 
-#include "google/protobuf/stubs/common.h"
-
-#include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -47,7 +38,9 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
-#include "protodb/protodb.h"
+#include "protodb/db/protodb.h"
+
+#include "protodb/actions/common.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -122,23 +115,9 @@ struct Mark {
 };
 
 #if 0
-struct FieldInfo {
-  struct Tag {
-    uint32_t field_number = -1;
-    internal::WireFormatLite::WireType wire_type;
-    uint32_t length = 0;
-  } tag;
-
-  struct LengthDelimited {
-    // For run-length encoded fields, this will contain the start 
-    // and end markers in the Cord they were read from where
-    // rle_length = rle_end - rle_start
-    uint32_t cord_start = 0;
-    uint32_t length = 0;
-
-    // For run-length encoded fields, the data parses as a valid proto.
-    bool is_valid_message = false;
-  } length_delimited;
+struct TagField {
+  Tag tag;
+  Field field;
 };
 #endif
 
@@ -245,16 +224,7 @@ struct Field {
   //bool is_valid_ut8 = false;  // TODO
 };
 
-struct ExplainPrinter {
-  struct Indent {
-    Indent(ExplainPrinter& printer) : p(printer) { p.indent(); }
-    ~Indent() { p.outdent(); }
-    ExplainPrinter& p;
-  };
-  Indent WithIndent() { return Indent(*this); }
-  void indent() { ++indent_; };
-  void outdent() { --indent_; ABSL_CHECK_GE(indent_, 0); }
-
+struct ExplainPrinter : public Printer {
   std::string indent_spacing() { 
     std::string spacing;
     for (int i = 0; i < indent_; ++i) spacing += "  ";
@@ -304,8 +274,6 @@ struct ExplainPrinter {
     std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(segment.snippet, 8), "]") << std::endl;
   }
- protected:
-  int indent_ = 0;
 };
 
 bool ScanFields(const ScanContext& context, const Descriptor* descriptor);
@@ -339,32 +307,6 @@ std::optional<Tag> ReadTag(const ScanContext& context, const Descriptor* descrip
   };
 }
 
-bool IsAsciiPrintable(std::string_view str) {
-  for (char c : str) {
-    if (!absl::ascii_isprint(c)) return false;
-  }
-  return true;
-}
-
-bool IsValidMessage(std::string_view str) {
-  if (str.empty()) return false;
-
-  absl::Cord cord(str);
-  io::CordInputStream cord_input(&cord);
-  io::CodedInputStream cis(&cord_input);
-
-  cis.SetTotalBytesLimit(str.length());
-  while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
-    uint32_t tag = 0;
-    if (!cis.ReadVarint32(&tag)) {
-       return false;
-    }
-    if (!internal::WireFormatLite::SkipField(&cis, tag)) {
-      return false;
-    }
-  }
-  return true;
-}
 
 std::optional<Field> ReadField_LengthDelimited(const ScanContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
@@ -415,7 +357,7 @@ std::optional<Field> ReadField_LengthDelimited(const ScanContext& context, const
     }
   }
 
-  const bool is_valid_message = IsValidMessage(chunk_segment.snippet);
+  const bool is_valid_message = IsParseableAsMessage(chunk_segment.snippet);
   if (is_valid_message) {
     return Field {
       .segment = length_segment,

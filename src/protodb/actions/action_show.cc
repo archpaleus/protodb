@@ -1,4 +1,4 @@
-#include "protodb/action_show.h"
+#include "protodb/actions/action_show.h"
 
 #include "google/protobuf/stubs/platform_macros.h"
 
@@ -48,7 +48,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
-#include "protodb/protodb.h"
+#include "protodb/db/protodb.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"

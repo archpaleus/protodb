@@ -1,4 +1,4 @@
-#include "protodb/action_guess.h"
+#include "protodb/db/protodb.h"
 
 #include "google/protobuf/stubs/platform_macros.h"
 

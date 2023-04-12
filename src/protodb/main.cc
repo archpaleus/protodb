@@ -1,5 +1,5 @@
 #include "absl/log/initialize.h"
-#include "protodb/action_guess.h"
+#include "protodb/actions/action_guess.h"
 #include "protodb/command_line_parse.h"
 
 namespace google {

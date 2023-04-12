@@ -20,8 +20,8 @@
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_field.h"
 
-#include "protodb/action_guess.h"
-#include "protodb/action_show.h"
+#include "protodb/actions/action_guess.h"
+#include "protodb/actions/action_show.h"
 #include "protodb/source_tree.h"
 
 // Must be included last.

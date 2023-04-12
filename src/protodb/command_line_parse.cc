@@ -49,11 +49,11 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 
-#include "protodb/action_explain.h"
-#include "protodb/action_guess.h"
-#include "protodb/action_show.h"
+#include "protodb/actions/action_explain.h"
+#include "protodb/actions/action_guess.h"
+#include "protodb/actions/action_show.h"
 #include "protodb/error_printer.h"
-#include "protodb/protodb.h"
+#include "protodb/db/protodb.h"
 #include "protodb/source_tree.h"
 
 // Must be included last.

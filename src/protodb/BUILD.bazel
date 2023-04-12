@@ -4,33 +4,27 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 cc_library(
     name = "command_line_parse",
     srcs = [
-        "action_explain.cc",
-        "action_guess.cc",
-        "action_show.cc",
         "command_line_parse.cc",
-        "protodb.cc",
         "source_tree.cc",
     ],
     hdrs = [
-        "action_explain.h",
-        "action_guess.h",
-        "action_show.h",
         "command_line_parse.h",
         "error_printer.h",
-        "protodb.h",
         "source_tree.h",
     ],
-    strip_include_prefix = "",
     include_prefix = "protodb",
+    strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
-        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+        "//src/protodb/actions",
+        "//src/protodb/io",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
     ],
 )
 
@@ -38,16 +32,13 @@ cc_library(
     name = "protodb_lib",
     deps = [
         ":command_line_parse",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
         "@com_google_absl//absl/log:initialize",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
     ],
 )
 
 cc_binary(
     name = "protodb",
-    srcs = [ "main.cc" ],
-    deps = [ ":protodb_lib" ],
+    srcs = ["main.cc"],
+    deps = [":protodb_lib"],
 )
-
-
-

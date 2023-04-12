@@ -1,0 +1,27 @@
+
+cc_library(
+    name = "io",
+    deps = [
+        ":printer",
+    ],
+)
+
+cc_library(
+    name = "printer",
+    srcs = [
+    ],
+    hdrs = [
+        "color_printer.h",
+        "printer.h",
+        "term_colors.h",
+    ],
+    strip_include_prefix = "",
+    include_prefix = "protodb/io",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/log:absl_check",
+        #"@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/strings",
+        #"@com_google_absl//absl/strings:str_format",
+    ],
+)

@@ -19,7 +19,7 @@
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_field.h"
-#include "protodb/protodb.h"
+#include "protodb/db/protodb.h"
 
 namespace google {
 namespace protobuf {

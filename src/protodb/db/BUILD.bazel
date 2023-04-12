@@ -1,0 +1,25 @@
+
+cc_library(
+    name = "db",
+    deps = [ ":protodb" ]
+)
+
+cc_library(
+    name = "protodb",
+    srcs = [
+        "protodb.cc",
+    ],
+    hdrs = [
+        "protodb.h",
+    ],
+    strip_include_prefix = "",
+    include_prefix = "protodb/db",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)

@@ -1,0 +1,86 @@
+cc_library(
+    name = "actions",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":action_explain",
+        ":action_guess",
+        ":action_show",
+        ":common",
+    ],
+)
+
+cc_library(
+    name = "action_explain",
+    srcs = ["action_explain.cc"],
+    hdrs = ["action_explain.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb/db:protodb",
+        "//src/protodb/io:printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)
+
+cc_library(
+    name = "action_guess",
+    srcs = ["action_guess.cc"],
+    hdrs = ["action_guess.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb/db:protodb",
+        "//src/protodb/io:printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)
+
+cc_library(
+    name = "action_show",
+    srcs = ["action_show.cc"],
+    hdrs = ["action_show.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb/db:protodb",
+        "//src/protodb/io:printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)
+
+cc_library(
+    name = "common",
+    srcs = [
+        "common.cc",
+    ],
+    hdrs = [
+        "common.h",
+    ],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/protodb/db:protodb",
+        "//src/protodb/io:printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)
