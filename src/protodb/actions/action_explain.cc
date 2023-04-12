@@ -550,11 +550,16 @@ bool Explain(const ProtoDb& protodb,
   io::CodedInputStream cis(zcis);
   cis.SetTotalBytesLimit(cord.size());
 
-  const std::string data = (std::string) cord;
+  // Since we read this as a single block from the file, it should
+  // always be a single "flat" chunk of data,
+  const auto maybe_data = cord.TryFlat();
+  // If this fails we need some better logic here.
+  ABSL_CHECK(maybe_data.has_value());
+  
   ExplainPrinter printer;
   ScanContext scan_context = {
     .cord = cord,
-    .data = std::string_view(data),
+    .data = maybe_data.value(),
     .cis = &cis,
     .descriptor_pool = descriptor_pool.get(),
     .printer = printer,
