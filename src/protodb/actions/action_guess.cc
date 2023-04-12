@@ -61,13 +61,13 @@ namespace protodb {
 namespace {
 
 struct GuessContext {
-  GuessContext(DescriptorDatabase* database, DescriptorPool* descriptor_pool) 
+  GuessContext(DescriptorDatabase* database, DescriptorPool* descriptor_pool)
       : database_(database),
-        descriptor_pool_(descriptor_pool), 
+        descriptor_pool_(descriptor_pool),
         depth_(0) {
   }
 
-  GuessContext(const GuessContext& parent, std::string candidate) 
+  GuessContext(const GuessContext& parent, std::string candidate)
       : database_(parent.database_),
         descriptor_pool_(parent.descriptor_pool_),
         depth_(parent.depth_ + 1) {
@@ -120,13 +120,13 @@ static std::string WireTypeName(int wire_type) {
 bool WireTypeValid(int wire_type) {
   switch (wire_type) {
     case internal::WireFormatLite::WIRETYPE_VARINT: // VARINT
-    case internal::WireFormatLite::WIRETYPE_FIXED64: 
-    case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED: 
-    case internal::WireFormatLite::WIRETYPE_FIXED32: 
-    case internal::WireFormatLite::WIRETYPE_START_GROUP: 
-    case internal::WireFormatLite::WIRETYPE_END_GROUP: 
+    case internal::WireFormatLite::WIRETYPE_FIXED64:
+    case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED:
+    case internal::WireFormatLite::WIRETYPE_FIXED32:
+    case internal::WireFormatLite::WIRETYPE_START_GROUP:
+    case internal::WireFormatLite::WIRETYPE_END_GROUP:
       return true;
-    default: 
+    default:
       return false;
   }
 }
@@ -134,11 +134,11 @@ bool WireTypeValid(int wire_type) {
 struct FieldInfo {
   uint32_t field_number = -1;
   internal::WireFormatLite::WireType wire_type;
-  
+
   // For run-length encoded fields, the data parses as a valid proto.
   bool is_valid_message = false;
 
-  // For run-length encoded fields, this will contain the start 
+  // For run-length encoded fields, this will contain the start
   // and end markers in the Cord they were read from where
   // rle_length = rle_end - rle_start
   uint32_t rle_start;
@@ -156,7 +156,7 @@ struct FieldFingerprint {
   std::vector<std::pair<uint32_t, uint32_t>> rle_sections;
 
   std::string to_string() {
-    return absl::StrCat(field_number, WireTypeLetter(wire_type), is_message_likely ? "M" : "", is_repeated ? "*" : "");
+    return absl::StrCat(field_number, WireTypeLetter(wire_type), is_message_likely ? "M" : "S", is_repeated ? "*" : "");
   }
 };
 
@@ -217,8 +217,8 @@ bool ScanFields(const GuessContext& context, const absl::Cord& cord, std::vector
 
     FieldInfo field_info = {.field_number=field_number, .wire_type=wire_type};
     if (wire_type == internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-      // Try to skip the length-delimited amount.  If this 
-      // fails then we either have a truncated or malformed 
+      // Try to skip the length-delimited amount.  If this
+      // fails then we either have a truncated or malformed
       // message.
       uint32_t length;
       if (!cis.ReadVarint32(&length)) {
@@ -229,14 +229,14 @@ bool ScanFields(const GuessContext& context, const absl::Cord& cord, std::vector
       field_info.rle_start = cis.CurrentPosition();
       field_info.rle_end = cis.CurrentPosition() + length;
 
-      io::CordInputStream tmp_cord_input(&cord);
+      absl::Cord message_cord = cord.Subcord(field_info.rle_start, length);
+      io::CordInputStream tmp_cord_input(&message_cord);
       io::CodedInputStream tmp_cis(&tmp_cord_input);
-      tmp_cis.SetTotalBytesLimit(cord.size());
-      tmp_cis.Skip(cis.CurrentPosition());
+      tmp_cis.SetTotalBytesLimit(length);
       int tags_parsed = CheckForValidMessage(context, &tmp_cis, length);
       if (tags_parsed > 1) {
          field_info.is_valid_message = true;
-      } 
+      }
 
       uint32_t startpoint = cis.CurrentPosition();
       if (!cis.Skip(length)) {
@@ -264,21 +264,21 @@ bool ScanFields(const GuessContext& context, const absl::Cord& cord, std::vector
       internal::WireFormatLite::WireType type = field_info.wire_type;
       if (type == internal::WireFormatLite::WIRETYPE_END_GROUP) continue;
       type_set.insert(type);
-      
+
     }
     if (type_set.size() > 1) {
       DebugLog("warning: mismatched types for same field");
       warning_mismatched_types = true;
     }
-    
+
     FieldFingerprint fp{field_number, *type_set.begin(), .is_repeated=field_count > 1};
 
     // Default this to true and then set false if we didn't parse a valid message.
     fp.is_message_likely = true;
     for (const FieldInfo& field_info : field_infos) {
       fp.rle_sections.push_back(std::make_pair(field_info.rle_start, field_info.rle_end));
-      
-      // This will result in false for any case where we weren't able to 
+
+      // This will result in false for any case where we weren't able to
       // parse a valid message.
       fp.is_message_likely &= field_info.is_valid_message;
     }
@@ -314,7 +314,7 @@ bool MatchFingerprintsToDescriptor(
       //context.DebugLog(absl::StrCat("field ", fp.field_number, ": repeated fingerprint is not repeated in descriptor"));
       return false;
     }
-    
+
     //DebugLog(absl::StrCat("field_type: ", field_descriptor->type()));
     auto field_type = static_cast<internal::WireFormatLite::FieldType>(field_descriptor->type());
     if (fp.wire_type != internal::WireFormatLite::WireTypeForFieldType(field_type)) {
@@ -358,7 +358,7 @@ std::optional<std::string> GetMessageTypeAtFieldNumber(
     // but either way just ignore if we don't have a field.
     return std::nullopt;
   }
-  
+
   if (field_descriptor->type() != FieldDescriptor::TYPE_MESSAGE) {
     return std::nullopt;
   }
@@ -392,16 +392,16 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
     }
     const uint32_t field_number = tag >> 3;
     const internal::WireFormatLite::WireType wire_type = internal::WireFormatLite::GetTagWireType(tag);
-    //context->DebugLog(absl::StrCat(field_number, ",", wire_type, " ", context->score_));
+    context->DebugLog(absl::StrCat(field_number, WireTypeLetter(wire_type), " -> score: ", context->score_));
 
     context->score_ += 1;
 
-    if (wire_type != internal::WireFormatLite::WIRETYPE_START_GROUP ||
-        wire_type != internal::WireFormatLite::WIRETYPE_END_GROUP) {
+    if (wire_type == internal::WireFormatLite::WIRETYPE_START_GROUP ||
+        wire_type == internal::WireFormatLite::WIRETYPE_END_GROUP) {
       internal::WireFormatLite::SkipField(&cis, tag);
       continue;
     }
-    
+
     if (wire_type != internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       // Assume that the field fingerprint check knows this is a valid
       // non-message type and continue scanning.
@@ -409,12 +409,12 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
       internal::WireFormatLite::SkipField(&cis, tag);
       continue;
     }
-    
+
     uint32_t length = 0;
     if (!cis.ReadVarint32(&length)) return false;
     absl::Cord message;
     if (!cis.ReadCord(&message, length)) {
-      // This should always succeed.  If not we have a truncated message 
+      // This should always succeed.  If not we have a truncated message
       // or a malformed length encoding.
       // We could handle this better but for now just abort.
       //ABSL_LOG(FATAL) << " error reading length-delimited field ";
@@ -428,7 +428,7 @@ bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string ex
     }
 
     // Only some length-delimited fields are messages.  If we found a field
-    // that matches a message type in one of the candidate messages then 
+    // that matches a message type in one of the candidate messages then
     // we need to match based on the candidate message types and filter out
     // any that didn't match.
     //context->DebugLog(absl::StrCat("Expecting to read field ", field_number, " as ", *maybe_message_type));
@@ -492,7 +492,7 @@ bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
     io::FileInputStream in(STDIN_FILENO);
     in.ReadCord(&cord, 1 << 20);
   }
-  
+
   std::set<std::string> matches;
   google::protobuf::protodb::Guess(cord, protodb, &matches);
 
