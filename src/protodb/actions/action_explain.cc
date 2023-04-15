@@ -19,9 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "protodb/io/printer.h"
-#include "protodb/io/color_printer.h"
-
 #include "absl/log/absl_check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -38,10 +35,12 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
-#include "protodb/db/protodb.h"
-#include "protodb/io/mark.h"
 
 #include "protodb/actions/common.h"
+#include "protodb/db/protodb.h"
+#include "protodb/io/color_printer.h"
+#include "protodb/io/mark.h"
+#include "protodb/io/printer.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -49,73 +48,6 @@
 namespace google {
 namespace protobuf {
 namespace protodb {
-
-std::string BinToHex(std::string_view bytes, unsigned maxlen = UINT32_MAX) {
-  std::string hex;
-  std::stringstream ss;
-  ss << std::hex;
-
-  for (int i = 0; i < bytes.length(); ++i) {
-    if (i == maxlen) {
-      ss << " ...";
-      break;
-    }
-    if (i != 0) ss << " ";
-    const unsigned char b = bytes[i];
-    ss << std::setw(2) << std::setfill('0') << (unsigned) b;
-  }
-  return ss.str();
-}
-std::string BinToHex(absl::Cord bytes, unsigned maxlen = UINT32_MAX) {
-  return BinToHex(bytes.Flatten(), maxlen);
-}
-
-
-struct ExplainPrinter;
-struct ExplainContext {
-  const absl::Cord* cord;
-  io::CodedInputStream* cis;
-  DescriptorPool* descriptor_pool;
-  ExplainPrinter& printer;
-};
-
-struct ExplainSegment {
-  const uint32_t start;
-  const uint32_t length;
-  const absl::Cord snippet;
-};
-
-struct ExplainMark {
-  ExplainMark(const ExplainContext& context) 
-      : context_(context), marker_start_(context_.cis->CurrentPosition()) {
-  }
-
-  void stop() {
-    if (!maybe_marker_end_) maybe_marker_end_ = context_.cis->CurrentPosition();
-  }
-
-  uint32_t distance() {
-    if (maybe_marker_end_) {
-      return *maybe_marker_end_ - marker_start_;
-    } else {
-      return context_.cis->CurrentPosition() - marker_start_;
-    }
-  }
-
-  ExplainSegment segment() {
-    stop();
-    return {
-      .start = marker_start_,
-      .length = distance(),
-      .snippet = context_.cord->Subcord(marker_start_, distance()),
-    };
-  }
-
- private:
-  const ExplainContext& context_;
-  const uint32_t marker_start_;
-  std::optional<uint32_t> maybe_marker_end_;
-};
 
 static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
@@ -157,42 +89,32 @@ static bool WireTypeValid(int wire_type) {
 }
 
 
-// Move to descriptor_utils.cc
-static const Descriptor* FindMessageType(
-    DescriptorDatabase* db, const DescriptorPool* pool, const std::string& message_type) {
-  {
-    const auto* descriptor = pool->FindMessageTypeByName(message_type);
-    if (descriptor) {
-      //std::cerr << descriptor->full_name() << std::endl;
-      return descriptor;
-    } 
-  }
+std::string BinToHex(std::string_view bytes, unsigned maxlen = UINT32_MAX) {
+  std::string hex;
+  std::stringstream ss;
+  ss << std::hex;
 
-  std::vector<std::string> all_message_names;
-  db->FindAllMessageNames(&all_message_names);
-
-  const auto suffix = absl::StrCat(".", message_type);
-  std::vector<std::string> matches;
-  for (const auto& name : all_message_names) {
-    if (absl::EndsWith(name, suffix)) {
-      matches.push_back(name);
+  for (int i = 0; i < bytes.length(); ++i) {
+    if (i == maxlen) {
+      ss << " ...";
+      break;
     }
+    if (i != 0) ss << " ";
+    const unsigned char b = bytes[i];
+    ss << std::setw(2) << std::setfill('0') << (unsigned) b;
   }
-
-  if (matches.empty()) {
-    std::cerr << "No matching type for " << message_type << "" << std::endl;
-    return nullptr;
-  } else if (matches.size() == 1) {
-    return pool->FindMessageTypeByName(matches[0]);
-  } else {
-    // Can't decide.
-    std::cerr << "Found multiple messages matching " << message_type << ":" << std::endl;
-    for (const auto& match : matches) {
-      std::cerr << match << ":" << std::endl;
-    }
-    return nullptr;
-  }
+  return ss.str();
 }
+std::string BinToHex(absl::Cord bytes, unsigned maxlen = UINT32_MAX) {
+  return BinToHex(bytes.Flatten(), maxlen);
+}
+
+
+struct ExplainSegment {
+  const uint32_t start;
+  const uint32_t length;
+  const absl::Cord snippet;
+};
 
 struct Tag {
   const ExplainSegment segment;
@@ -228,6 +150,10 @@ struct Field {
 };
 
 struct ExplainPrinter : public Printer {
+  using Printer::Printer;
+  ExplainPrinter() { indent_ = 0; }
+  virtual ~ExplainPrinter() {}
+
   std::string indent_spacing() { 
     std::string spacing;
     for (int i = 0; i < indent_; ++i) spacing += "  ";
@@ -281,10 +207,90 @@ struct ExplainPrinter : public Printer {
   }
 };
 
+struct ExplainContext : public ScanContext{
+  ExplainContext(io::CodedInputStream& cis, const absl::Cord& cord, ExplainPrinter& explain_printer, DescriptorPool* pool, DescriptorDatabase* database)
+      : ScanContext(cis, &cord, &explain_printer, pool, database), explain_printer(explain_printer) {}
+  ExplainContext(const ExplainContext& parent)
+      : ScanContext(parent), explain_printer(parent.explain_printer) {}
+
+  ExplainPrinter& explain_printer;
+};
+
+struct ExplainMark {
+  ExplainMark(const ExplainContext& context) 
+      : context_(context), marker_start_(context_.cis.CurrentPosition()) {
+  }
+
+  void stop() {
+    if (!maybe_marker_end_) maybe_marker_end_ = context_.cis.CurrentPosition();
+  }
+
+  uint32_t distance() {
+    if (maybe_marker_end_) {
+      return *maybe_marker_end_ - marker_start_;
+    } else {
+      return context_.cis.CurrentPosition() - marker_start_;
+    }
+  }
+
+  ExplainSegment segment() {
+    stop();
+    return {
+      .start = marker_start_,
+      .length = distance(),
+      .snippet = context_.cord->Subcord(marker_start_, distance()),
+    };
+  }
+
+ private:
+  const ExplainContext& context_;
+  const uint32_t marker_start_;
+  std::optional<uint32_t> maybe_marker_end_;
+};
+
+
+// Move to descriptor_utils.cc
+static const Descriptor* FindMessageType(
+    DescriptorDatabase* db, const DescriptorPool* pool, const std::string& message_type) {
+  {
+    const auto* descriptor = pool->FindMessageTypeByName(message_type);
+    if (descriptor) {
+      //std::cerr << descriptor->full_name() << std::endl;
+      return descriptor;
+    } 
+  }
+
+  std::vector<std::string> all_message_names;
+  db->FindAllMessageNames(&all_message_names);
+
+  const auto suffix = absl::StrCat(".", message_type);
+  std::vector<std::string> matches;
+  for (const auto& name : all_message_names) {
+    if (absl::EndsWith(name, suffix)) {
+      matches.push_back(name);
+    }
+  }
+
+  if (matches.empty()) {
+    std::cerr << "No matching type for " << message_type << "" << std::endl;
+    return nullptr;
+  } else if (matches.size() == 1) {
+    return pool->FindMessageTypeByName(matches[0]);
+  } else {
+    // Can't decide.
+    std::cerr << "Found multiple messages matching " << message_type << ":" << std::endl;
+    for (const auto& match : matches) {
+      std::cerr << match << ":" << std::endl;
+    }
+    return nullptr;
+  }
+}
+
+
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor);
 
 std::optional<Tag> ReadTag(const ExplainContext& context, const Descriptor* descriptor) {
-  io::CodedInputStream& cis = *context.cis;
+  io::CodedInputStream& cis = context.cis;
   ExplainMark tag_mark(context);
   uint32_t tag = 0;
   if (!cis.ReadVarint32(&tag)) {
@@ -318,7 +324,7 @@ std::optional<Tag> ReadTag(const ExplainContext& context, const Descriptor* desc
 
 std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
-  io::CodedInputStream& cis = *context.cis;
+  io::CodedInputStream& cis = context.cis;
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
   uint32_t length = 0;
@@ -331,6 +337,8 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
   ExplainMark chunk_mark(context);
   if (!cis.Skip(length)) return std::nullopt;
   const auto chunk_segment = chunk_mark.segment();
+  ABSL_CHECK_EQ(chunk_segment.length, length);
+  ABSL_CHECK_EQ(chunk_segment.snippet.size(), length);
 
   if (tag.field_descriptor) {
     const auto field_type = tag.field_descriptor->type();
@@ -392,7 +400,7 @@ std::optional<Field> ReadField_VarInt(const ExplainContext& context, const Tag& 
 
   ExplainMark field_mark(context);
   uint64_t varint = 0;
-  if (!context.cis->ReadVarint64(&varint)) return std::nullopt;
+  if (!context.cis.ReadVarint64(&varint)) return std::nullopt;
 
   return Field {
     .segment = field_mark.segment(),
@@ -407,7 +415,7 @@ std::optional<Field> ReadField_Fixed32(const ExplainContext& context, const Tag&
 
   ExplainMark field_mark(context);
   uint32_t fixed32;
-  if (!context.cis->ReadLittleEndian32(&fixed32)) return std::nullopt;
+  if (!context.cis.ReadLittleEndian32(&fixed32)) return std::nullopt;
 
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
   return Field {
@@ -423,7 +431,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context, const Tag&
 
   ExplainMark field_mark(context);
   uint64_t fixed64;
-  if (!context.cis->ReadLittleEndian64(&fixed64)) return std::nullopt;
+  if (!context.cis.ReadLittleEndian64(&fixed64)) return std::nullopt;
 
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
   return Field {
@@ -435,13 +443,13 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context, const Tag&
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
-  io::CodedInputStream& cis = *context.cis;
+  io::CodedInputStream& cis = context.cis;
   while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);
 
     auto tag = ReadTag(context, descriptor);
     if (!tag) {
-      context.printer.EmitInvalidTag(tag_field_mark.segment());
+      context.explain_printer.EmitInvalidTag(tag_field_mark.segment());
       return false;
     }
 
@@ -451,41 +459,36 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
       case internal::WireFormatLite::WIRETYPE_VARINT: {
         auto field = ReadField_VarInt(context, tag.value());
         if (!field) {
-          context.printer.EmitInvalidField(*tag, field_mark.segment());
+          context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
           return false;
         }
-        context.printer.Emit(*tag, *field);
+        context.explain_printer.Emit(*tag, *field);
         break;
       }
       case internal::WireFormatLite::WIRETYPE_FIXED32: {
         auto field = ReadField_Fixed32(context, tag.value());
         if (!field) {
-          context.printer.EmitInvalidField(*tag, field_mark.segment());
+          context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
           return false;
         }
-        context.printer.Emit(*tag, *field);
+        context.explain_printer.Emit(*tag, *field);
         break;
       }
       case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED: {
         auto field = ReadField_LengthDelimited(context, tag.value());
         if (!field) {
-          context.printer.EmitInvalidField(*tag, field_mark.segment());
+          context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
           return false;
         }
 
-        context.printer.Emit(*tag, *field);
+        context.explain_printer.Emit(*tag, *field);
         if (field->is_valid_message) {
-          auto indent = context.printer.WithIndent();
           io::CordInputStream cord_input(context.cord);
           io::CodedInputStream chunk_cis(&cord_input);
           chunk_cis.SetTotalBytesLimit(field->chunk_segment->start + field->chunk_segment->length);
           chunk_cis.Skip(field->chunk_segment->start);
-          ExplainContext subcontext = {
-            .cord = context.cord,
-            .cis = &chunk_cis,
-            .descriptor_pool = context.descriptor_pool,
-            .printer = context.printer,
-          };
+          ExplainContext subcontext(chunk_cis, *context.cord, context.explain_printer, context.descriptor_pool, context.descriptor_database);
+          auto indent = context.explain_printer.WithIndent();
           if (tag->field_descriptor) {
             ScanFields(subcontext, tag->field_descriptor->message_type());
           } else {
@@ -497,15 +500,15 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
       case internal::WireFormatLite::WIRETYPE_FIXED64: {
         auto field = ReadField_Fixed64(context, tag.value());
         if (!field) {
-          context.printer.EmitInvalidField(tag.value(), field_mark.segment());
+          context.explain_printer.EmitInvalidField(tag.value(), field_mark.segment());
           return false;
         }
-        context.printer.Emit(*tag, *field);
+        context.explain_printer.Emit(*tag, *field);
         break;
       }
       default:
         std::cerr << "unexpected wire type" << std::endl;
-        if (!internal::WireFormatLite::SkipField(context.cis, tag->tag)) return false;
+        if (!internal::WireFormatLite::SkipField(&context.cis, tag->tag)) return false;
     }
   }
 
@@ -565,15 +568,9 @@ bool Explain(const ProtoDb& protodb,
   io::CordInputStream cord_input(&cord);
   io::CodedInputStream cis(&cord_input);
   cis.SetTotalBytesLimit(cord.size());
-
   
-  ExplainPrinter printer;
-  ExplainContext scan_context = {
-    .cord = &cord,
-    .cis = &cis,
-    .descriptor_pool = descriptor_pool.get(),
-    .printer = printer,
-  };
+  ExplainPrinter explain_printer;
+  ExplainContext scan_context(cis, cord, explain_printer, descriptor_pool.get(), nullptr);
   
   return ScanFields(scan_context, descriptor);
 }

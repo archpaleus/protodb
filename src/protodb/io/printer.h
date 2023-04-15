@@ -29,7 +29,6 @@ struct Printer {
   void outdent() { 
     --indent_;
     assert(indent_ >= 0);
-    //ABSL_CHECK_GE(indent_, 0); 
   }
 
   // RAII object to track indenting and unindenting.
