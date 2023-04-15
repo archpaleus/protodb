@@ -24,26 +24,24 @@ Mark::Mark(const ScanContext& context)
 }
 
 void Mark::stop() {
-  marker_end_ = context_.cis.CurrentPosition();
-}
-Segment Mark::segment() {
-  if (!marker_end_) stop();
-  return {.start=marker_start_, .length=marker_end_ - marker_start_, _snippet()};
+  if (maybe_marker_end_) ABSL_CHECK_EQ(*maybe_marker_end_, context_.cis.CurrentPosition());
+  maybe_marker_end_ = context_.cis.CurrentPosition();
 }
 
-uint32_t Mark::_distance() {
-  if (marker_end_) {
-    return marker_end_ - marker_start_;
+uint32_t Mark::distance() {
+  if (maybe_marker_end_) {
+    return *maybe_marker_end_ - marker_start_;
   } else {
     return context_.cis.CurrentPosition() - marker_start_;
   }
 }
-std::string_view Mark::_snippet() {
-  if (!context_.cord) return {};
-  auto snippet_cord = context_.cord->Subcord(marker_start_, _distance());
-  auto maybe_snippet = snippet_cord.TryFlat();
-  if (maybe_snippet) ABSL_CHECK_EQ(snippet_cord, *maybe_snippet);
-  return maybe_snippet ? *maybe_snippet : std::string_view{};
+
+Segment Mark::segment() {
+  return {
+    .start=marker_start_,
+    .length=distance(),
+    .snippet=context_.cord->Subcord(marker_start_, distance()),
+  };
 }
 
 }  // namespace

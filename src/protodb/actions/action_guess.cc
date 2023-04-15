@@ -187,7 +187,7 @@ bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis, 
         cis.PopLimit(limit);
 
         // Check if we were able to parse the entire message
-        const int bytes_remaining = length - chunk_mark._distance();
+        const int bytes_remaining = length - chunk_mark.distance();
         if (bytes_remaining) {
           if (!cis.Skip(bytes_remaining)) return false;
         } else {

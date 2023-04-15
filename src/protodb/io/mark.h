@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <optional>
 #include <string>
 
 #include "protodb/io/scan_context.h"
@@ -18,23 +19,26 @@ namespace protodb {
 struct Segment {
   const uint32_t start;
   const uint32_t length;
-  const std::string_view snippet;
+  const absl::Cord snippet;
 };
 
 struct Mark {
   Mark(const ScanContext& context);
 
+  // End the mark's segment at the current position.
   void stop();
+
+  // Compute the distance from the current Mark.
+  uint32_t distance();
+
+  // Return a Segment between the start and end of the Mark.
   Segment segment();
 
-
-  uint32_t _distance();
  private:
-  std::string_view _snippet();
 
   const ScanContext& context_;
   const uint32_t marker_start_;
-  uint32_t marker_end_ = 0;
+  std::optional<uint32_t> maybe_marker_end_;
 };
 
 } // namespace protodb

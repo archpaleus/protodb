@@ -66,6 +66,10 @@ std::string BinToHex(std::string_view bytes, unsigned maxlen = UINT32_MAX) {
   }
   return ss.str();
 }
+std::string BinToHex(absl::Cord bytes, unsigned maxlen = UINT32_MAX) {
+  return BinToHex(bytes.Flatten(), maxlen);
+}
+
 
 struct ExplainPrinter;
 struct ExplainContext {
@@ -79,7 +83,7 @@ struct ExplainContext {
 struct ExplainSegment {
   const uint32_t start;
   const uint32_t length;
-  const std::string_view snippet;
+  const absl::Cord snippet;
 };
 
 struct ExplainMark {
@@ -88,39 +92,31 @@ struct ExplainMark {
   }
 
   void stop() {
-    marker_end_ = context_.cis->CurrentPosition();
-  }
-  ExplainSegment segment() {
-    if (!marker_end_) stop();
-    return {.start=marker_start_, .length=marker_end_ - marker_start_, _snippet()};
+    if (!maybe_marker_end_) maybe_marker_end_ = context_.cis->CurrentPosition();
   }
 
-  uint32_t _distance() {
-    if (!marker_end_) stop();
-    return marker_end_ - marker_start_;
-  }
-  std::string_view _snippet() {
-    if (!marker_end_) stop();
-    {
-      std::string cord_snippet = (std::string) context_.cord.Subcord(marker_start_, marker_end_ - marker_start_);
-      std::string_view data_snippet = context_.data.substr(marker_start_, marker_end_ - marker_start_);
-      ABSL_CHECK_EQ(cord_snippet, data_snippet);
+  uint32_t distance() {
+    if (maybe_marker_end_) {
+      return *maybe_marker_end_ - marker_start_;
+    } else {
+      return context_.cis->CurrentPosition() - marker_start_;
     }
-    return context_.data.substr(marker_start_, marker_end_ - marker_start_);
+  }
+
+  ExplainSegment segment() {
+    stop();
+    return {
+      .start = marker_start_,
+      .length = distance(),
+      .snippet = context_.cord.Subcord(marker_start_, distance()),
+    };
   }
 
  private:
   const ExplainContext& context_;
   const uint32_t marker_start_;
-  uint32_t marker_end_ = 0;
+  std::optional<uint32_t> maybe_marker_end_;
 };
-
-#if 0
-struct TagField {
-  Tag tag;
-  Field field;
-};
-#endif
 
 static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
@@ -239,8 +235,10 @@ struct ExplainPrinter : public Printer {
     return spacing;
   }
   void Emit(const Tag& tag, const Field& field) {
-    std::string data = absl::StrCat(tag.segment.snippet, field.segment.snippet);
-    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
+    std::string data = absl::StrCat(
+        tag.segment.snippet.TryFlat().value(),
+        field.segment.snippet.TryFlat().value());
+    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
               << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]") << " "
               << indent_spacing()
               << std::setw(4) << tag.field_number << " : ";
@@ -253,9 +251,9 @@ struct ExplainPrinter : public Printer {
       }
       std::cout << field.name << ":";
       if (field.chunk_segment->length == 1) {
-        std::cout << " (" << field.chunk_segment->length << " byte)";
+        std::cout << "  (" << field.chunk_segment->length << " byte)";
       } else if (field.chunk_segment->length > 1) {
-        std::cout << " (" << field.chunk_segment->length << " bytes)";
+        std::cout << "  (" << field.chunk_segment->length << " bytes)";
       }
     } else if (field.is_valid_ascii) {
       std::cout << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
@@ -294,6 +292,8 @@ std::optional<Tag> ReadTag(const ExplainContext& context, const Descriptor* desc
     std::cerr << " [invalid tag] " << std::endl;
     return std::nullopt;
   }
+  const auto tag_segment = tag_mark.segment();
+  tag_mark.stop();
   const uint32_t field_number = tag >> 3;
   const internal::WireFormatLite::WireType wire_type = internal::WireFormatLite::GetTagWireType(tag);
   
@@ -308,7 +308,7 @@ std::optional<Tag> ReadTag(const ExplainContext& context, const Descriptor* desc
   // Look for the field in the descriptor.  Failure here is not terminal.
   auto* field_descriptor = descriptor->FindFieldByNumber(field_number);
   return Tag{
-    .segment = tag_mark.segment(),
+    .segment = tag_segment,
     .tag = tag,
     .field_number = field_number,
     .wire_type = wire_type,
@@ -337,7 +337,7 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
     const auto field_type = tag.field_descriptor->type();
     if (field_type == FieldDescriptor::TYPE_MESSAGE) {
       return Field {
-        .segment = length_mark.segment(),
+        .segment = length_segment,
         .chunk_segment = chunk_segment,
         .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : WireTypeLetter(tag.wire_type),
         .message_type = (std::string) (field_descriptor ? field_descriptor->message_type()->name() : "??"),
@@ -347,26 +347,26 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
     } else if (field_type == FieldDescriptor::TYPE_STRING ||
                field_type == FieldDescriptor::TYPE_BYTES) {
       return Field {
-        .segment = length_mark.segment(),
+        .segment = length_segment,
         .chunk_segment = chunk_segment,
         .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : WireTypeLetter(tag.wire_type),
         .name = field_descriptor ? field_descriptor->name() : "",
         .value = (std::string) chunk_segment.snippet,
-        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
+        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value()),
       };
     } else {
       return Field {
-        .segment = length_mark.segment(),
+        .segment = length_segment,
         .chunk_segment = chunk_segment,
         .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : WireTypeLetter(tag.wire_type),
         .name = field_descriptor ? field_descriptor->name() : "",
         .value = (std::string) chunk_segment.snippet,
-        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
+        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value()),
       };
     }
   }
 
-  const bool is_valid_message = IsParseableAsMessage(chunk_segment.snippet);
+  const bool is_valid_message = IsParseableAsMessage(chunk_segment.snippet.TryFlat().value());
   if (is_valid_message) {
     return Field {
       .segment = length_segment,
@@ -375,13 +375,13 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
       .is_valid_message = is_valid_message,
     };
   } else {
-    const bool is_ascii_printable = IsAsciiPrintable(chunk_segment.snippet);
+    const bool is_ascii_printable = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value());
     // TODO: add is_valid_utf8
     return Field {
       .segment = length_segment,
       .chunk_segment = chunk_segment,
       .name = is_ascii_printable ? "<string>" : "<bytes>",
-      .value = (std::string) (is_ascii_printable ? chunk_segment.snippet : BinToHex(chunk_segment.snippet, 12)),
+      .value =  (is_ascii_printable ? (std::string) chunk_segment.snippet : BinToHex(chunk_segment.snippet, 12)),
       .is_valid_ascii = is_ascii_printable,
     };
   }
@@ -514,6 +514,15 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
   return true;
 }
 
+std::string readFile(std::filesystem::path path) {
+  std::ifstream f(path, std::ios::in | std::ios::binary);
+  const auto sz = std::filesystem::file_size(path);
+
+  std::string result(sz, '\0');
+  f.read(result.data(), sz);
+
+  return result;
+}
 
 bool Explain(const ProtoDb& protodb,
              const std::span<std::string>& params) {
@@ -549,34 +558,21 @@ bool Explain(const ProtoDb& protodb,
     int fd = fileno(fp);
     io::FileInputStream in(fd);
     in.ReadCord(&cord, 10 << 20);
-    auto str = (std::string) cord;
-    cord = str;
   } else {
     std::cerr << "Reading from stdin" << std::endl;
     io::FileInputStream in(STDIN_FILENO);
     in.ReadCord(&cord, 10 << 20);
-    auto str = (std::string) cord;
-    cord = str;
   }
 
   io::CordInputStream cord_input(&cord);
   io::CodedInputStream cis(&cord_input);
   cis.SetTotalBytesLimit(cord.size());
 
-  const auto maybe_data = cord.TryFlat();
-  std::string tmp_data;
-  std::string_view data;
-  if (maybe_data) {
-    data = *maybe_data;
-  } else {
-    tmp_data = (std::string) cord;
-    data = tmp_data;
-  }
   
   ExplainPrinter printer;
   ExplainContext scan_context = {
     .cord = cord,
-    .data = data,
+    .data = cord.Flatten(),
     .cis = &cis,
     .descriptor_pool = descriptor_pool.get(),
     .printer = printer,
