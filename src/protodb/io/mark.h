@@ -15,7 +15,6 @@ namespace google {
 namespace protobuf {
 namespace protodb {
 
-
 struct Segment {
   const uint32_t start;
   const uint32_t length;
@@ -35,7 +34,6 @@ struct Mark {
   Segment segment();
 
  private:
-
   const ScanContext& context_;
   const uint32_t marker_start_;
   std::optional<uint32_t> maybe_marker_end_;

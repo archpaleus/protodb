@@ -73,8 +73,7 @@ std::string BinToHex(absl::Cord bytes, unsigned maxlen = UINT32_MAX) {
 
 struct ExplainPrinter;
 struct ExplainContext {
-  const absl::Cord& cord;
-  const std::string_view data;
+  const absl::Cord* cord;
   io::CodedInputStream* cis;
   DescriptorPool* descriptor_pool;
   ExplainPrinter& printer;
@@ -108,7 +107,7 @@ struct ExplainMark {
     return {
       .start = marker_start_,
       .length = distance(),
-      .snippet = context_.cord.Subcord(marker_start_, distance()),
+      .snippet = context_.cord->Subcord(marker_start_, distance()),
     };
   }
 
@@ -352,7 +351,7 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
         .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : WireTypeLetter(tag.wire_type),
         .name = field_descriptor ? field_descriptor->name() : "",
         .value = (std::string) chunk_segment.snippet,
-        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value()),
+        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
       };
     } else {
       return Field {
@@ -361,12 +360,12 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
         .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : WireTypeLetter(tag.wire_type),
         .name = field_descriptor ? field_descriptor->name() : "",
         .value = (std::string) chunk_segment.snippet,
-        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value()),
+        .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
       };
     }
   }
 
-  const bool is_valid_message = IsParseableAsMessage(chunk_segment.snippet.TryFlat().value());
+  const bool is_valid_message = IsParseableAsMessage(chunk_segment.snippet);
   if (is_valid_message) {
     return Field {
       .segment = length_segment,
@@ -375,7 +374,7 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, co
       .is_valid_message = is_valid_message,
     };
   } else {
-    const bool is_ascii_printable = IsAsciiPrintable(chunk_segment.snippet.TryFlat().value());
+    const bool is_ascii_printable = IsAsciiPrintable(chunk_segment.snippet);
     // TODO: add is_valid_utf8
     return Field {
       .segment = length_segment,
@@ -477,13 +476,12 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
         context.printer.Emit(*tag, *field);
         if (field->is_valid_message) {
           auto indent = context.printer.WithIndent();
-          io::CordInputStream cord_input(&context.cord);
+          io::CordInputStream cord_input(context.cord);
           io::CodedInputStream chunk_cis(&cord_input);
           chunk_cis.SetTotalBytesLimit(field->chunk_segment->start + field->chunk_segment->length);
           chunk_cis.Skip(field->chunk_segment->start);
           ExplainContext subcontext = {
             .cord = context.cord,
-            .data = context.data,
             .cis = &chunk_cis,
             .descriptor_pool = context.descriptor_pool,
             .printer = context.printer,
@@ -571,8 +569,7 @@ bool Explain(const ProtoDb& protodb,
   
   ExplainPrinter printer;
   ExplainContext scan_context = {
-    .cord = cord,
-    .data = cord.Flatten(),
+    .cord = &cord,
     .cis = &cis,
     .descriptor_pool = descriptor_pool.get(),
     .printer = printer,

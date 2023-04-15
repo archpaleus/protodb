@@ -28,6 +28,9 @@ bool IsAsciiPrintable(std::string_view str) {
   }
   return true;
 }
+bool IsAsciiPrintable(absl::Cord cord) {
+  return IsAsciiPrintable(cord.Flatten());
+}
 
 bool IsParseableAsMessage(std::string_view str) {
 
@@ -49,6 +52,9 @@ bool IsParseableAsMessage(std::string_view str) {
     }
   }
   return true;
+}
+bool IsParseableAsMessage(absl::Cord cord) {
+  return IsParseableAsMessage(cord.Flatten());
 }
 
 } // namespace protodb
