@@ -48,6 +48,9 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/db/protodb.h"
+#include "protodb/io/mark.h"
+#include "protodb/io/scan_context.h"
+#include "protodb/io/parsing_scanner.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -60,41 +63,18 @@ namespace protodb {
 
 namespace {
 
-struct GuessContext {
-  GuessContext(DescriptorDatabase* database, DescriptorPool* descriptor_pool)
-      : database_(database),
-        descriptor_pool_(descriptor_pool),
-        depth_(0) {
-  }
+struct GuessContext : public ScanContext {
+  using ScanContext::ScanContext;
 
-  GuessContext(const GuessContext& parent, std::string candidate)
-      : database_(parent.database_),
-        descriptor_pool_(parent.descriptor_pool_),
-        depth_(parent.depth_ + 1) {
-    candidates_.insert(candidate);
-  }
-
+  //(io::CodedInputStream& cis, const absl::Cord* cord, Printer* printer, DescriptorPool* pool, DescriptorDatabase* database);
+  GuessContext(const GuessContext& parent) : ScanContext(parent) {}
   void DebugLog(const std::string& msg) const {
-    //for (int n = 0; n < depth_; ++n) std::cerr << ".  ";
-    //std::cerr << msg << std::endl;
+    if (printer) printer->EmitLine(msg);
   }
 
-  DescriptorDatabase* database_;
-  DescriptorPool* descriptor_pool_;
-  const int depth_;
-  std::set<std::string> candidates_;
-  int score_ = 0;
 };
 
-struct GuessMatchScore {
-  std::string message_type;
-  int score;
-};
-
-void DebugLog(std::string_view msg) {
-  std::cerr << msg << std::endl;
-}
-
+#if 0
 static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
     case 0: return "V";
@@ -117,6 +97,8 @@ static std::string WireTypeName(int wire_type) {
     default: return absl::StrCat(wire_type);
   }
 }
+#endif
+
 bool WireTypeValid(int wire_type) {
   switch (wire_type) {
     case internal::WireFormatLite::WIRETYPE_VARINT: // VARINT
@@ -131,42 +113,16 @@ bool WireTypeValid(int wire_type) {
   }
 }
 
-struct FieldInfo {
-  uint32_t field_number = -1;
-  internal::WireFormatLite::WireType wire_type;
 
-  // For run-length encoded fields, the data parses as a valid proto.
-  bool is_valid_message = false;
-
-  // For run-length encoded fields, this will contain the start
-  // and end markers in the Cord they were read from where
-  // rle_length = rle_end - rle_start
-  uint32_t rle_start;
-  uint32_t rle_end;
-};
-
-struct FieldFingerprint {
-  uint32_t field_number = -1;
-  internal::WireFormatLite::WireType wire_type;
-  bool is_repeated = false;
-  bool is_message_likely = false;
-
-  // Start/end pairs for all of the RLE fields in the message
-  // that match this field number.
-  std::vector<std::pair<uint32_t, uint32_t>> rle_sections;
-
-  std::string to_string() {
-    return absl::StrCat(field_number, WireTypeLetter(wire_type), is_message_likely ? "M" : "S", is_repeated ? "*" : "");
-  }
-};
 
 } // namespace anonymous
 
+#if 0
 int CheckForValidMessage(
     const GuessContext& context,
     io::CodedInputStream* cis,
     int length) {
-  //DebugLog(absl::StrCat("parsing length: ", length));
+  context.DebugLog(absl::StrCat("parsing length: ", length));
   const int limit = cis->PushLimit(length);
   int tags_parsed = 0;
   while(cis->BytesUntilLimit()) {
@@ -187,118 +143,96 @@ int CheckForValidMessage(
   //DebugLog(absl::StrCat("tags read: ", tags_parsed));
   return tags_parsed;
 }
+#endif
 
-
-bool ScanFields(const GuessContext& context, const absl::Cord& cord, std::vector<FieldFingerprint>* fingerprints) {
-  io::CordInputStream cord_input(&cord);
-  io::ZeroCopyInputStream* zcis = &cord_input;
-  io::CodedInputStream cis(zcis);
-  cis.SetTotalBytesLimit(cord.size());
-
-  // Mapping of field number to types read.
-  std::string fingerprint;
-  std::map<uint32_t, std::vector<FieldInfo>> fields;
-  while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
+bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis, std::vector<ParsedField>& fields) {
+  while(!cis.ExpectAtEnd() &&
+        cis.BytesUntilTotalBytesLimit() &&
+        cis.BytesUntilLimit()) {
+    Mark tag_mark(context);
     uint32_t tag = 0;
     if (!cis.ReadVarint32(&tag)) {
       std::cout << " [invalid tag] " << std::endl;
       return false;
     }
+    tag_mark.stop();
 
     const uint32_t field_number = tag >> 3;
     const internal::WireFormatLite::WireType wire_type = internal::WireFormatLite::GetTagWireType(tag);
-    //std::cout << " " << field_number << WireTypeLetter(wire_type);
-    fingerprint += absl::StrCat(field_number, WireTypeLetter(wire_type), " ");
-
     if (!WireTypeValid(wire_type)) {
-      std::cout << "[ field " << field_number << ": invalid wire type " << WireTypeLetter(wire_type) << " ] " << std::endl;
+      //context->EmitWarning("");
+      //std::cout << "[ field " << field_number << ": invalid wire type " << WireTypeLetter(wire_type) << " ] " << std::endl;
       return false;
     }
 
-    FieldInfo field_info = {.field_number=field_number, .wire_type=wire_type};
+    Mark field_mark(context);
     if (wire_type == internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-      // Try to skip the length-delimited amount.  If this
-      // fails then we either have a truncated or malformed
-      // message.
       uint32_t length;
       if (!cis.ReadVarint32(&length)) {
-        // This should always succeed.
-        std::cout << " unexpected end of proto " << std::endl;
+        // This might frequently fail if we are parsing a blob that isn't actually a length delimited field.
+        //std::cout << " unexpected end of length-delimted field " << std::endl;
         return false;
       }
-      field_info.rle_start = cis.CurrentPosition();
-      field_info.rle_end = cis.CurrentPosition() + length;
 
-      absl::Cord message_cord = cord.Subcord(field_info.rle_start, length);
-      io::CordInputStream tmp_cord_input(&message_cord);
-      io::CodedInputStream tmp_cis(&tmp_cord_input);
-      tmp_cis.SetTotalBytesLimit(length);
-      int tags_parsed = CheckForValidMessage(context, &tmp_cis, length);
-      if (tags_parsed > 1) {
-         field_info.is_valid_message = true;
+      auto ld = ParsedField::LengthDelimited{
+           .length = length,
+           .rle_start = static_cast<uint32_t>(cis.CurrentPosition()), // TODO: replace with snippet
+           .rle_end = static_cast<uint32_t>(cis.CurrentPosition() + length), // TODO: remove
+      };
+      //std::vector<ParsedField> message_fields;
+      Mark chunk_mark(context);
+      if (length > 0) {
+        auto limit = cis.PushLimit(length);
+        ScanInputForFields(context, cis, ld.message_fields);
+        cis.PopLimit(limit);
+
+        // Check if we were able to parse the entire message
+        const int bytes_remaining = length - chunk_mark._distance();
+        if (bytes_remaining) {
+          if (!cis.Skip(bytes_remaining)) return false;
+        } else {
+          ld.is_valid_message = ld.message_fields.size() > 0;
+        }
+        //ABSL_CHECK_EQ(cis.CurrentPosition(), ld.rle_end);
       }
 
-      uint32_t startpoint = cis.CurrentPosition();
-      if (!cis.Skip(length)) {
-        auto move = cis.CurrentPosition() - startpoint;
-        std::cout << " rle_start " << field_info.rle_start
-                  << " rle_end " << field_info.rle_end << std::endl;
-        std::cout << " moved " << move << " bytes to " << cis.CurrentPosition() << std::endl;
-        std::cout << " remaining " << cis.BytesUntilTotalBytesLimit() << std::endl;
-        std::cout << " failed to skip " << length << " bytes " << std::endl;
-        return false;
-      }
+      ld.segment.emplace(chunk_mark.segment());
+      ParsedField&& field_info = {
+        .tag_segment = tag_mark.segment(),
+        .field_segment = field_mark.segment(),
+        .field_number = field_number,
+        .wire_type = wire_type, 
+        .length_delimited = std::move(ld),
+        // .length_delimited = ParsedField::LengthDelimited{
+        //   .length = length,
+        //   .rle_start = static_cast<uint32_t>(cis.CurrentPosition()), // TODO: replace with snippet
+        //   .rle_end = static_cast<uint32_t>(cis.CurrentPosition() + length), // TODO: remove
+        // }
+         };
+      fields.emplace_back(std::move(field_info));
     } else {
       internal::WireFormatLite::SkipField(&cis, tag);
+      ParsedField field_info = {
+        .tag_segment = tag_mark.segment(),
+        .field_segment = field_mark.segment(),
+        .field_number = field_number,
+        .wire_type = wire_type
+      };
+      fields.emplace_back(std::move(field_info));
     }
-    fields[field_number].push_back(field_info);
   }
-  //context.DebugLog(absl::StrCat("fingerprint: ", fingerprint));
 
-  std::string fingerprint_str;
-  bool warning_mismatched_types = false;
-  for (auto const& [field_number, field_infos] : fields) {
-    const int field_count = field_infos.size();
-    std::set<internal::WireFormatLite::WireType> type_set;
-    for (const FieldInfo& field_info : field_infos) {
-      internal::WireFormatLite::WireType type = field_info.wire_type;
-      if (type == internal::WireFormatLite::WIRETYPE_END_GROUP) continue;
-      type_set.insert(type);
-
-    }
-    if (type_set.size() > 1) {
-      DebugLog("warning: mismatched types for same field");
-      warning_mismatched_types = true;
-    }
-
-    FieldFingerprint fp{field_number, *type_set.begin(), .is_repeated=field_count > 1};
-
-    // Default this to true and then set false if we didn't parse a valid message.
-    fp.is_message_likely = true;
-    for (const FieldInfo& field_info : field_infos) {
-      fp.rle_sections.push_back(std::make_pair(field_info.rle_start, field_info.rle_end));
-
-      // This will result in false for any case where we weren't able to
-      // parse a valid message.
-      fp.is_message_likely &= field_info.is_valid_message;
-    }
-    fingerprints->push_back(fp);
-    fingerprint_str += fp.to_string() + " ";
-  }
-  if (!warning_mismatched_types) {
-    //context.DebugLog(absl::StrCat("fingerprint ", absl::StrJoin(*fingerprints, " ")));
-  }
-  //context.DebugLog("Fingerprint: " + fingerprint_str);
-
-  return !warning_mismatched_types;
+  return true;
 }
 
-bool MatchFingerprintsToDescriptor(
+#if 0
+bool MatchGroupsToDescriptor(
      const GuessContext& context,
-     const std::vector<FieldFingerprint>& field_fingerprints,
+     const std::vector<ParsedFieldsGroup>& groups,
      const Descriptor* descriptor) {
-  for (FieldFingerprint fp : field_fingerprints) {
-    if (descriptor->FindExtensionRangeContainingNumber(fp.field_number)) {
+  for (ParsedFieldsGroup fp : groups) {
+    const auto* ext_descriptor = descriptor->FindExtensionRangeContainingNumber(fp.field_number);
+    if (ext_descriptor) {
       //context.DebugLog(absl::StrCat("extension ", fp.field_number, " ok"));
       continue;
     }
@@ -325,150 +259,160 @@ bool MatchFingerprintsToDescriptor(
 
   return true;
 }
+#endif
 
-bool FindMessagesMatchingFingerprint(
-    const GuessContext* context,
-    const std::vector<std::string>& candidates,
-    const std::vector<FieldFingerprint>& field_fingerprints,
-    std::vector<std::string>* matches) {
+std::optional<ParsedFieldsGroup> FieldsToGroup(
+    const std::vector<const ParsedField*>& fields
+) {
+  // We can't operate on an empty field set.
+  ABSL_CHECK_GT(fields.size(), 0);
+  const int field_count = fields.size();
+  const auto field_number = fields[0]->field_number;
+  const auto wire_type = fields[0]->wire_type;
 
-  for (const auto& message_name : candidates) {
-    const Descriptor* descriptor = context->descriptor_pool_->FindMessageTypeByName(message_name);
-    ABSL_CHECK(descriptor != nullptr) << message_name;
-
-    if (!MatchFingerprintsToDescriptor(*context, field_fingerprints, descriptor)) {
-      continue;
+  std::optional<ParsedFieldsGroup> fp;
+  for (const ParsedField* field : fields) {
+    if (field->wire_type == internal::WireFormatLite::WIRETYPE_END_GROUP) continue;
+    if (field->wire_type != wire_type) {
+      //DebugLog(absl::StrCat("warning: mismatched types for same field: ", wire_type, " != ", field->wire_type));
+      //warning_mismatched_types = true;
+      return std::nullopt;
     }
-
-    matches->push_back(message_name);
-    context->DebugLog(absl::StrCat("fingerprint candidate: ", message_name));
   }
 
-  return matches->size() > 0;
+  fp.emplace(ParsedFieldsGroup{
+    .field_number = field_number,
+    .wire_type = wire_type,
+    .is_repeated = field_count > 1,
+    .fields = fields,
+  });
+
+  return fp;
 }
 
-std::optional<std::string> GetMessageTypeAtFieldNumber(
-    const Descriptor* descriptor,
-    uint32_t field_number) {
-  ABSL_CHECK(descriptor != nullptr);
+static int ScoreMessageAgainstParsedFields(
+    const GuessContext& context,
+    const std::vector<const ParsedField*>& fields,
+    const Descriptor* descriptor);
 
-  const auto* field_descriptor = descriptor->FindFieldByNumber(field_number);
+static int ScoreMessageAgainstGroup(
+    const GuessContext& context,
+    const ParsedFieldsGroup& group, const Descriptor* descriptor)  {
+  int score = 0;
+
+  //std::cerr << absl::StrCat(" . group: ", group.to_string()) << std::endl;
+  if (descriptor->FindExtensionRangeContainingNumber(group.field_number)) {
+    //context.DebugLog(absl::StrCat("extension ", group.field_number, " ok"));
+    score += 2;
+    return score;
+  }
+
+  const auto* field_descriptor = descriptor->FindFieldByNumber(group.field_number);
   if (!field_descriptor) {
-    // In theory this shouldn't fail because we checked in ScanFields,
-    // but either way just ignore if we don't have a field.
-    return std::nullopt;
+    // missing field from the message, skip message
+    //context.DebugLog(absl::StrCat("field ", group.field_number, ": missing from descriptor"));
+    //return false;
+    score -= 1;
+    return score;
+  }
+  score += 2;
+
+  if (group.is_repeated == field_descriptor->is_repeated()) {
+    // field isn't repeated, skip message
+    //context.DebugLog(absl::StrCat("field ", group.field_number, ": repeated fingerprint is not repeated in descriptor"));
+    score += 5;
+  } else {
+
+    score -= 2;
   }
 
-  if (field_descriptor->type() != FieldDescriptor::TYPE_MESSAGE) {
-    return std::nullopt;
+  //DebugLog(absl::StrCat("field_type: ", field_descriptor->type()));
+  auto field_type = static_cast<internal::WireFormatLite::FieldType>(field_descriptor->type());
+  if (group.wire_type == internal::WireFormatLite::WireTypeForFieldType(field_type)) {
+    score += 1;
+  } else {
+    //context.DebugLog(absl::StrCat("field ", group.field_number, ": wiretype does not match"));
+    //std::cerr << absl::StrCat("field ", group.field_number, ": wiretype ",
+    //     internal::WireFormatLite::WireTypeForFieldType(field_type), " does not match ", group.wire_type);
+    score -= 10;
   }
-  return field_descriptor->message_type()->full_name();
+
+  for (const ParsedField* field : group.fields) {
+    if (field->length_delimited.has_value() &&
+        field->length_delimited->length > 0 &&
+        field->length_delimited->message_fields.size()) {
+      GuessContext subcontext(context);
+      std::vector<ParsedFieldsGroup> message_fingerprints;
+      std::vector<const ParsedField*> message_fields;
+      for (const ParsedField& field : field->length_delimited->message_fields) message_fields.push_back(&field);
+      if (field_descriptor->message_type()) {
+        int message_score = ScoreMessageAgainstParsedFields(subcontext, message_fields, field_descriptor->message_type());
+        if (message_score)
+          score += message_score;
+      }
+    }
+  }
+  
+  return score;
 }
 
-// Tries to parse the message from the cord as the expected message type.
-bool ReadMessageAs(GuessContext* context, const absl::Cord& cord, std::string expected_message) {
-  std::vector<FieldFingerprint> field_fingerprints;
-  if (!ScanFields(*context, cord, &field_fingerprints)) {
-    // For now we ignore anything that throws a warning.
-    // We could be more aggressive in some cases.
-    context->DebugLog(absl::StrCat("scan fields error -- cord size: ", cord.size()));
-    return false;
+static int ScoreMessageAgainstParsedFields(
+    const GuessContext& context,
+    const std::vector<const ParsedField*>& fields,
+    const Descriptor* descriptor) {
+  std::map<uint32_t, std::vector<const ParsedField*>> field_map;
+  for (const auto* field : fields) {
+    field_map[field->field_number].push_back(field);
   }
 
-  const Descriptor* descriptor = context->descriptor_pool_->FindMessageTypeByName(expected_message);
-  if (!MatchFingerprintsToDescriptor(*context, field_fingerprints, descriptor)) {
-    return false;
+  std::vector<ParsedFieldsGroup> groups;
+  for (const auto& [field_number, fields] : field_map) {
+    auto maybe_group = FieldsToGroup(fields);
+    if (!maybe_group.has_value()) {
+      continue;
+    }
+    groups.emplace_back(std::move(*maybe_group));
   }
 
-  io::CordInputStream cord_input(&cord);
-  io::ZeroCopyInputStream* zcis = &cord_input;
-  io::CodedInputStream cis(zcis);
-  cis.SetTotalBytesLimit(cord.size());
-  while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
-    uint32_t tag = 0;
-    if (!cis.ReadVarint32(&tag)) {
-      std::cout << "failed to read tag." << std::endl;
-      break;
-    }
-    const uint32_t field_number = tag >> 3;
-    const internal::WireFormatLite::WireType wire_type = internal::WireFormatLite::GetTagWireType(tag);
-    context->DebugLog(absl::StrCat(field_number, WireTypeLetter(wire_type), " -> score: ", context->score_));
-
-    context->score_ += 1;
-
-    if (wire_type == internal::WireFormatLite::WIRETYPE_START_GROUP ||
-        wire_type == internal::WireFormatLite::WIRETYPE_END_GROUP) {
-      internal::WireFormatLite::SkipField(&cis, tag);
-      continue;
-    }
-
-    if (wire_type != internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-      // Assume that the field fingerprint check knows this is a valid
-      // non-message type and continue scanning.
-      //DebugLog(absl::StrCat(" skipping field - not length delimited "));
-      internal::WireFormatLite::SkipField(&cis, tag);
-      continue;
-    }
-
-    uint32_t length = 0;
-    if (!cis.ReadVarint32(&length)) return false;
-    absl::Cord message;
-    if (!cis.ReadCord(&message, length)) {
-      // This should always succeed.  If not we have a truncated message
-      // or a malformed length encoding.
-      // We could handle this better but for now just abort.
-      //ABSL_LOG(FATAL) << " error reading length-delimited field ";
-      return false;
-    }
-
-    auto maybe_message_type = GetMessageTypeAtFieldNumber(descriptor, field_number);
-    if (!maybe_message_type) {
-      //DebugLog(absl::StrCat(" skipping field - no message type for field number ", field_number));
-      continue;
-    }
-
-    // Only some length-delimited fields are messages.  If we found a field
-    // that matches a message type in one of the candidate messages then
-    // we need to match based on the candidate message types and filter out
-    // any that didn't match.
-    //context->DebugLog(absl::StrCat("Expecting to read field ", field_number, " as ", *maybe_message_type));
-    GuessContext subcontext(*context, *maybe_message_type);
-    if (!ReadMessageAs(&subcontext, message, *maybe_message_type)) {
-      return false;
-    }
-    context->score_ += 5 + subcontext.score_;
+  int score = 0;
+  for (const ParsedFieldsGroup& group : groups) {
+    const int message_score = ScoreMessageAgainstGroup(context, group, descriptor);
+    //std::cerr << absl::StrCat("group: ", group.to_string()) << " -> " << message_score << std::endl;
+    score += message_score;
   }
-  return true;
+  return score;
 }
 
-bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
+static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
            std::set<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(protodb.database(), nullptr);
-  GuessContext context{protodb.database(), pool.get()};
 
-  std::vector<FieldFingerprint> field_fingerprints;
-  if (!ScanFields(context, data, &field_fingerprints)) {
+  io::CordInputStream cord_input(&data);
+  io::ZeroCopyInputStream* zcis = &cord_input;
+  io::CodedInputStream cis(zcis);
+
+  GuessContext context{cis, &data, nullptr, pool.get(), protodb.database()};
+  cis.SetTotalBytesLimit(data.size());
+  std::vector<ParsedField> fields;
+  if (!ScanInputForFields(context, cis, fields)) {
     context.DebugLog(absl::StrCat("scan fields error -- cord size: ", data.size()));
     return false;
   }
+  context.DebugLog(absl::StrCat("scan ok "));
+
+  std::vector<const ParsedField*> field_ptrs;
+  for (const ParsedField& field : fields) field_ptrs.push_back(&field);
 
   std::vector<std::string> search_set;
   protodb.database()->FindAllMessageNames(&search_set);
-
-  std::vector<std::string> messages_matching_fingerprint;
-  if (!FindMessagesMatchingFingerprint(&context, search_set, field_fingerprints, &messages_matching_fingerprint)) {
-    // We have no protos in the database that can match this message.
-    context.DebugLog("No possible matches for field fingerprints found.");
-    return false;
-  }
+  
 
   std::vector<std::pair<int, std::string>> scores;
-  for (std::string message : messages_matching_fingerprint) {
-    GuessContext subcontext(context, message);
-    if (ReadMessageAs(&subcontext, data, message)) {
-      //DebugLog(absl::StrCat("Guess success : ", message, " - ", subcontext.score_));
-      scores.push_back(std::make_pair(subcontext.score_, message));
-    }
+  for (std::string message : search_set) {
+    const Descriptor* descriptor = context.descriptor_pool->FindMessageTypeByName(message);
+    ABSL_CHECK(descriptor);
+    const int score = ScoreMessageAgainstParsedFields(context, field_ptrs, descriptor);
+    scores.push_back(std::make_pair(score, message));
   }
 
   absl::c_sort(scores);

@@ -18,6 +18,7 @@ cc_library(
     deps = [
         ":common",
         "//src/protodb/db:protodb",
+        "//src/protodb/io:scanner",
         "//src/protodb/io:printer",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
@@ -36,6 +37,7 @@ cc_library(
     deps = [
         ":common",
         "//src/protodb/db:protodb",
+        "//src/protodb/io:scanner",
         "//src/protodb/io:printer",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",

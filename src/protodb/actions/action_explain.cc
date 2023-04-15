@@ -39,6 +39,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/db/protodb.h"
+#include "protodb/io/mark.h"
 
 #include "protodb/actions/common.h"
 
@@ -67,7 +68,7 @@ std::string BinToHex(std::string_view bytes, unsigned maxlen = UINT32_MAX) {
 }
 
 struct ExplainPrinter;
-struct ScanContext {
+struct ExplainContext {
   const absl::Cord& cord;
   const std::string_view data;
   io::CodedInputStream* cis;
@@ -75,21 +76,21 @@ struct ScanContext {
   ExplainPrinter& printer;
 };
 
-struct Segment {
+struct ExplainSegment {
   const uint32_t start;
   const uint32_t length;
   const std::string_view snippet;
 };
 
-struct Mark {
-  Mark(const ScanContext& context) 
+struct ExplainMark {
+  ExplainMark(const ExplainContext& context) 
       : context_(context), marker_start_(context_.cis->CurrentPosition()) {
   }
 
   void stop() {
     marker_end_ = context_.cis->CurrentPosition();
   }
-  Segment segment() {
+  ExplainSegment segment() {
     if (!marker_end_) stop();
     return {.start=marker_start_, .length=marker_end_ - marker_start_, _snippet()};
   }
@@ -109,7 +110,7 @@ struct Mark {
   }
 
  private:
-  const ScanContext& context_;
+  const ExplainContext& context_;
   const uint32_t marker_start_;
   uint32_t marker_end_ = 0;
 };
@@ -143,7 +144,7 @@ static std::string WireTypeName(int wire_type) {
     default: return absl::StrCat(wire_type);
   }
 }
-bool WireTypeValid(int wire_type) {
+static bool WireTypeValid(int wire_type) {
   switch (wire_type) {
     case internal::WireFormatLite::WIRETYPE_VARINT:  // 0
     case internal::WireFormatLite::WIRETYPE_FIXED64:  // 1
@@ -199,7 +200,7 @@ static const Descriptor* FindMessageType(
 }
 
 struct Tag {
-  const Segment segment;
+  const ExplainSegment segment;
   const uint32_t tag;
   const uint32_t field_number;
   const internal::WireFormatLite::WireType wire_type;
@@ -207,9 +208,9 @@ struct Tag {
 };
 
 struct Field {
-  // This is the entire field, includes of the "length" and "data"
+  // This is the entire field, inclusive of the "length" and "data"
   // portions of a length-delimited field.
-  const Segment segment;
+  const ExplainSegment segment;
   const std::string cpp_type;
   const std::string message_type;
   const std::string name;
@@ -217,10 +218,17 @@ struct Field {
 
   // This segment is only the "data" portion of the field for
   // length-delimited fields.
-  const std::optional<Segment> chunk_segment;
+  const std::optional<ExplainSegment> chunk_segment;
 
+  // True if the data portion is non-zero in size and parseable
+  // as a protobuf message.
   bool is_valid_message = false;
+  
+  // True if the data portion is non-zero in size and 
+  // all characters are ASCII printable.
   bool is_valid_ascii = false;
+
+  // True if the data portion is non-zero in size and is valid UTF-8.
   //bool is_valid_ut8 = false;  // TODO
 };
 
@@ -256,13 +264,13 @@ struct ExplainPrinter : public Printer {
     }
     std::cout << std::endl;
   }
-  void EmitInvalidTag(const Segment& segment) {
+  void EmitInvalidTag(const ExplainSegment& segment) {
     // TODO: add a message with the reason why it failed
     std::cout << " FAILED TO PARSE TAG: " << std::endl;
     std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(segment.snippet, 8), "]") << std::endl;
   }
-  void EmitInvalidField(const Tag& tag, const Segment& segment) {
+  void EmitInvalidField(const Tag& tag, const ExplainSegment& segment) {
     // TODO: add a message with the reason why it failed
     std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6)) 
               << std::setw(26) << absl::StrCat("[", BinToHex(tag.segment.snippet, 8), "]") << " "
@@ -276,11 +284,11 @@ struct ExplainPrinter : public Printer {
   }
 };
 
-bool ScanFields(const ScanContext& context, const Descriptor* descriptor);
+bool ScanFields(const ExplainContext& context, const Descriptor* descriptor);
 
-std::optional<Tag> ReadTag(const ScanContext& context, const Descriptor* descriptor) {
+std::optional<Tag> ReadTag(const ExplainContext& context, const Descriptor* descriptor) {
   io::CodedInputStream& cis = *context.cis;
-  Mark tag_mark(context);
+  ExplainMark tag_mark(context);
   uint32_t tag = 0;
   if (!cis.ReadVarint32(&tag)) {
     std::cerr << " [invalid tag] " << std::endl;
@@ -296,6 +304,7 @@ std::optional<Tag> ReadTag(const ScanContext& context, const Descriptor* descrip
     return std::nullopt;
   }
 
+
   // Look for the field in the descriptor.  Failure here is not terminal.
   auto* field_descriptor = descriptor->FindFieldByNumber(field_number);
   return Tag{
@@ -308,19 +317,19 @@ std::optional<Tag> ReadTag(const ScanContext& context, const Descriptor* descrip
 }
 
 
-std::optional<Field> ReadField_LengthDelimited(const ScanContext& context, const Tag& tag) {
+std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
   io::CodedInputStream& cis = *context.cis;
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
   uint32_t length = 0;
-  Mark length_mark(context);
+  ExplainMark length_mark(context);
   if (!cis.ReadVarint32(&length)) return std::nullopt;
   const auto length_segment = length_mark.segment();
   
   if (cis.BytesUntilTotalBytesLimit() < length) return std::nullopt;
 
-  Mark chunk_mark(context);
+  ExplainMark chunk_mark(context);
   if (!cis.Skip(length)) return std::nullopt;
   const auto chunk_segment = chunk_mark.segment();
 
@@ -378,11 +387,11 @@ std::optional<Field> ReadField_LengthDelimited(const ScanContext& context, const
   }
 }
 
-std::optional<Field> ReadField_VarInt(const ScanContext& context, const Tag& tag) {
+std::optional<Field> ReadField_VarInt(const ExplainContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_VARINT);
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
-  Mark field_mark(context);
+  ExplainMark field_mark(context);
   uint64_t varint = 0;
   if (!context.cis->ReadVarint64(&varint)) return std::nullopt;
 
@@ -394,10 +403,10 @@ std::optional<Field> ReadField_VarInt(const ScanContext& context, const Tag& tag
   };
 }
 
-std::optional<Field> ReadField_Fixed32(const ScanContext& context, const Tag& tag) {
+std::optional<Field> ReadField_Fixed32(const ExplainContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_FIXED32);
 
-  Mark field_mark(context);
+  ExplainMark field_mark(context);
   uint32_t fixed32;
   if (!context.cis->ReadLittleEndian32(&fixed32)) return std::nullopt;
 
@@ -410,10 +419,10 @@ std::optional<Field> ReadField_Fixed32(const ScanContext& context, const Tag& ta
   };
 }
 
-std::optional<Field> ReadField_Fixed64(const ScanContext& context, const Tag& tag) {
+std::optional<Field> ReadField_Fixed64(const ExplainContext& context, const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_FIXED64);
 
-  Mark field_mark(context);
+  ExplainMark field_mark(context);
   uint64_t fixed64;
   if (!context.cis->ReadLittleEndian64(&fixed64)) return std::nullopt;
 
@@ -426,18 +435,19 @@ std::optional<Field> ReadField_Fixed64(const ScanContext& context, const Tag& ta
   };
 }
 
-bool ScanFields(const ScanContext& context, const Descriptor* descriptor) {
+bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
   io::CodedInputStream& cis = *context.cis;
   while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
-    Mark tag_field_mark(context);
+    ExplainMark tag_field_mark(context);
 
     auto tag = ReadTag(context, descriptor);
     if (!tag) {
       context.printer.EmitInvalidTag(tag_field_mark.segment());
       return false;
     }
+
     
-    Mark field_mark(context);
+    ExplainMark field_mark(context);
     switch(tag->wire_type) {
       case internal::WireFormatLite::WIRETYPE_VARINT: {
         auto field = ReadField_VarInt(context, tag.value());
@@ -471,7 +481,7 @@ bool ScanFields(const ScanContext& context, const Descriptor* descriptor) {
           io::CodedInputStream chunk_cis(&cord_input);
           chunk_cis.SetTotalBytesLimit(field->chunk_segment->start + field->chunk_segment->length);
           chunk_cis.Skip(field->chunk_segment->start);
-          ScanContext subcontext = {
+          ExplainContext subcontext = {
             .cord = context.cord,
             .data = context.data,
             .cis = &chunk_cis,
@@ -538,28 +548,35 @@ bool Explain(const ProtoDb& protodb,
     }
     int fd = fileno(fp);
     io::FileInputStream in(fd);
-    in.ReadCord(&cord, 1 << 20);
+    in.ReadCord(&cord, 10 << 20);
+    auto str = (std::string) cord;
+    cord = str;
   } else {
     std::cerr << "Reading from stdin" << std::endl;
     io::FileInputStream in(STDIN_FILENO);
-    in.ReadCord(&cord, 1 << 20);
+    in.ReadCord(&cord, 10 << 20);
+    auto str = (std::string) cord;
+    cord = str;
   }
 
   io::CordInputStream cord_input(&cord);
-  io::ZeroCopyInputStream* zcis = &cord_input;
-  io::CodedInputStream cis(zcis);
+  io::CodedInputStream cis(&cord_input);
   cis.SetTotalBytesLimit(cord.size());
 
-  // Since we read this as a single block from the file, it should
-  // always be a single "flat" chunk of data,
   const auto maybe_data = cord.TryFlat();
-  // If this fails we need some better logic here.
-  ABSL_CHECK(maybe_data.has_value());
+  std::string tmp_data;
+  std::string_view data;
+  if (maybe_data) {
+    data = *maybe_data;
+  } else {
+    tmp_data = (std::string) cord;
+    data = tmp_data;
+  }
   
   ExplainPrinter printer;
-  ScanContext scan_context = {
+  ExplainContext scan_context = {
     .cord = cord,
-    .data = maybe_data.value(),
+    .data = data,
     .cis = &cis,
     .descriptor_pool = descriptor_pool.get(),
     .printer = printer,
