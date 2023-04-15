@@ -2,3 +2,12 @@ common --enable_bzlmod
 
 build --nocheck_visibility
 build --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
+
+build:asan              --strip=never
+build:asan              --copt="-Wno-macro-redefined"
+build:asan              --copt="-D_FORTIFY_SOURCE=0"
+build:asan              --copt="-O1"
+build:asan              --copt="-fno-omit-frame-pointer"
+build:asan              --copt="-fsanitize=address"
+build:asan              --copt="-DADDRESS_SANITIZER"
+build:asan              --linkopt="-fsanitize=address"
