@@ -788,11 +788,6 @@ Action:
   std::cout << std::endl;
 }
 
-
-
-
-
-
 bool CommandLineInterface::Encode(const ProtoDb& protodb, std::span<std::string> params) {
   auto descriptor_pool = std::make_unique<DescriptorPool>(
     protodb.database(), nullptr);

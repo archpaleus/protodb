@@ -30,6 +30,11 @@ struct Printer {
     --indent_;
     assert(indent_ >= 0);
   }
+  std::string indent_spacing(const std::string_view spacer = "  ") { 
+    std::string spacing;
+    for (int i = 0; i < indent_; ++i) spacing += spacer;
+    return spacing;
+  }
 
   // RAII object to track indenting and unindenting.
   struct Indent {

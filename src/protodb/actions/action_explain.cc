@@ -41,6 +41,7 @@
 #include "protodb/io/color_printer.h"
 #include "protodb/io/mark.h"
 #include "protodb/io/printer.h"
+#include "protodb/io/term_colors.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -154,36 +155,65 @@ struct ExplainPrinter : public Printer {
   ExplainPrinter() { indent_ = 0; }
   virtual ~ExplainPrinter() {}
 
-  std::string indent_spacing() { 
-    std::string spacing;
-    for (int i = 0; i < indent_; ++i) spacing += "  ";
-    return spacing;
-  }
   void Emit(const Tag& tag, const Field& field) {
     std::string data = absl::StrCat(
         tag.segment.snippet.TryFlat().value(),
         field.segment.snippet.TryFlat().value());
     std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
               << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]") << " "
-              << indent_spacing()
-              << std::setw(4) << tag.field_number << " : ";
+              << indent_spacing();
+    std::cout << termcolors::kBold << termcolors::kCyan;
+    std::cout << std::setw(4) << tag.field_number;
+    std::cout << termcolors::kReset
+              << " : ";
+
     if (field.is_valid_message) {
       if (!field.cpp_type.empty()) {
         std::cout << field.cpp_type << " ";
+        std::cout << termcolors::kReset;
       }
       if (!field.message_type.empty()) {
+        //std::cout << termcolors::kYellow;
+        //std::cout << termcolors::kBold << termcolors::kWhite;
         std::cout << field.message_type << " ";
+        std::cout << termcolors::kReset;
       }
-      std::cout << field.name << ":";
+      std::cout << termcolors::kYellow;
+      std::cout << field.name;
+      std::cout << termcolors::kReset;
+      std::cout << ":";
+      std::cout << termcolors::kMagenta;
       if (field.chunk_segment->length == 1) {
         std::cout << "  (" << field.chunk_segment->length << " byte)";
       } else if (field.chunk_segment->length > 1) {
         std::cout << "  (" << field.chunk_segment->length << " bytes)";
       }
+      std::cout << termcolors::kReset;
     } else if (field.is_valid_ascii) {
-      std::cout << field.cpp_type << " " << field.name << " = " << "\"" << field.value << "\"";
+      if (!field.cpp_type.empty()) {
+        std::cout << field.cpp_type << " ";
+        std::cout << termcolors::kReset;
+      }
+      std::cout << termcolors::kYellow
+                << field.name
+                << termcolors::kReset
+                << " = " << "\""
+                << termcolors::kGreen
+                << field.value
+                << termcolors::kReset
+                << "\"";
     } else {
-      std::cout << field.cpp_type << " " << field.name << " = " << field.value;
+      if (!field.cpp_type.empty()) {
+        std::cout << field.cpp_type << " ";
+        std::cout << termcolors::kReset;
+      }
+      std::cout << termcolors::kYellow
+                << field.name
+                << termcolors::kReset
+                << " = " 
+                << termcolors::kGreen
+                << field.value
+                << termcolors::kReset;
     }
     std::cout << std::endl;
   }

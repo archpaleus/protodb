@@ -31,9 +31,10 @@ struct ScanContext {
   io::CodedInputStream& cis;
 
   const absl::Cord* cord;
-  Printer* printer;
   DescriptorPool* descriptor_pool;
   DescriptorDatabase* descriptor_database;
+
+  Printer* printer;
   std::optional<Printer::Indent> indent;
 };
 
