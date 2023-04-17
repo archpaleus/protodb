@@ -71,61 +71,38 @@ struct ShowOptions {
 };
 
 struct ShowVisitor {
-  ShowOptions& options;
   io::Printer& printer;
 
   auto WithIndent() { return printer.WithIndent(); }
   void operator()(const FileDescriptor* descriptor) {
-    if (options.files) {
-      printer.Emit("file: ");
-      printer.Emit(descriptor->name());
-      printer.Emit("\n");
-    }
+    printer.Emit(absl::StrCat("file: ", descriptor->name(), "\n"));
   }
 
   void operator()(const Descriptor* descriptor) {
-    if (options.messages) {
-      printer.Emit("message: ");
-      printer.Emit(descriptor->name());
-      printer.Emit("\n");
-    }
+    printer.Emit(absl::StrCat("message: ", descriptor->name(), "\n"));
   }
 
   void operator()(const FieldDescriptor* descriptor) {
-    if (options.fields) {
-      printer.Emit("field: ");
-      printer.Emit(descriptor->name());
-      printer.Emit("\n");
-    }
+    printer.Emit(absl::StrCat("field: ", descriptor->name(), "\n"));
   }
 
   void operator()(const EnumDescriptor* descriptor) {  
-    if (options.enums) {
-      printer.Emit("enum: ");
-      printer.Emit(descriptor->name());
-      printer.Emit("\n");
-    }
+    printer.Emit(absl::StrCat("enum: ", descriptor->name(), "\n"));
   }
 
   void operator()(const EnumValueDescriptor* descriptor) {  
-    if (options.enums) {
     printer.Emit(descriptor->name());
     printer.Emit("\n");
-    }
   }
 
   void operator()(const ServiceDescriptor* descriptor) {  
-    if (options.services) {
     printer.Emit(descriptor->name());
     printer.Emit("\n");
-    }
   }
 
   void operator()(const MethodDescriptor* descriptor) {  
-    if (options.methods) {
       printer.Emit(descriptor->name());
       printer.Emit("\n");
-    }
   }
 
 };
@@ -225,7 +202,7 @@ bool Show(const protodb::ProtoDb& protodb,
     //FileDescriptorProto fdp;
     //ABSL_CHECK(db->FindFileByName(file, &fdp));
     const auto* file_descriptor = descriptor_pool->FindFileByName(file);
-    auto visitor = ShowVisitor{.options = show_options, .printer=printer};
+    auto visitor = ShowVisitor{.printer=printer};
     WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
     WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
   }

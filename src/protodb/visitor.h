@@ -49,7 +49,11 @@ struct DescriptorVisitor {
 
   auto indent() { return visit_fn.WithIndent(); }
 
-  void Walk(const FieldDescriptor* descriptor) { visit_fn(descriptor); }
+  void Walk(const FieldDescriptor* descriptor) { 
+    if (options.fields) {
+      visit_fn(descriptor); 
+    }
+  }
 
   void Walk(const EnumDescriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
@@ -80,7 +84,9 @@ struct DescriptorVisitor {
   }
 
   void Walk(const MethodDescriptor* descriptor) {
-     visit_fn(descriptor); 
+    if (options.methods) {
+      visit_fn(descriptor); 
+    }
   }
 
   void Walk(const Descriptor* descriptor) {
