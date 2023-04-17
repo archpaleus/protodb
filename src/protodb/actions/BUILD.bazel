@@ -55,6 +55,7 @@ cc_library(
     strip_include_prefix = "",
     deps = [
         ":common",
+        "//src/protodb:visitor",
         "//src/protodb/db:protodb",
         "//src/protodb/io:printer",
         "@com_google_absl//absl/log:absl_check",

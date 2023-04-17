@@ -2,6 +2,18 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 
 cc_library(
+    name = "visitor",
+    #srcs = [ "visitor.cc" ],
+    hdrs = ["visitor.h"],
+    include_prefix = "protodb",
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+    ],
+)
+
+cc_library(
     name = "command_line_parse",
     srcs = [
         "command_line_parse.cc",

@@ -49,6 +49,7 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/db/protodb.h"
+#include "protodb/visitor.h"
 
 // Must be included last.
 #include "google/protobuf/port_def.inc"
@@ -63,11 +64,71 @@ struct ShowOptions {
   bool packages = false;
   bool messages = false;
   bool enums = false;
+  bool enum_values = false;
   bool fields = false;
   bool services = false;
   bool methods = false;
 };
 
+struct ShowVisitor {
+  ShowOptions& options;
+  io::Printer& printer;
+
+  auto WithIndent() { return printer.WithIndent(); }
+  void operator()(const FileDescriptor* descriptor) {
+    if (options.files) {
+      printer.Emit("file: ");
+      printer.Emit(descriptor->name());
+      printer.Emit("\n");
+    }
+  }
+
+  void operator()(const Descriptor* descriptor) {
+    if (options.messages) {
+      printer.Emit("message: ");
+      printer.Emit(descriptor->name());
+      printer.Emit("\n");
+    }
+  }
+
+  void operator()(const FieldDescriptor* descriptor) {
+    if (options.fields) {
+      printer.Emit("field: ");
+      printer.Emit(descriptor->name());
+      printer.Emit("\n");
+    }
+  }
+
+  void operator()(const EnumDescriptor* descriptor) {  
+    if (options.enums) {
+      printer.Emit("enum: ");
+      printer.Emit(descriptor->name());
+      printer.Emit("\n");
+    }
+  }
+
+  void operator()(const EnumValueDescriptor* descriptor) {  
+    if (options.enums) {
+    printer.Emit(descriptor->name());
+    printer.Emit("\n");
+    }
+  }
+
+  void operator()(const ServiceDescriptor* descriptor) {  
+    if (options.services) {
+    printer.Emit(descriptor->name());
+    printer.Emit("\n");
+    }
+  }
+
+  void operator()(const MethodDescriptor* descriptor) {  
+    if (options.methods) {
+      printer.Emit(descriptor->name());
+      printer.Emit("\n");
+    }
+  }
+
+};
 
 void ShowFile(DescriptorDatabase* db, const ShowOptions& show_options, const FileDescriptorProto* descriptor, io::Printer* printer) {
    if (descriptor) {
@@ -158,6 +219,18 @@ bool Show(const protodb::ProtoDb& protodb,
 
   io::FileOutputStream out(STDOUT_FILENO);
   io::Printer printer(&out, '$');
+  std::vector<std::string> file_names;
+  db->FindAllFileNames(&file_names); 
+  for (const auto& file : file_names) {
+    //FileDescriptorProto fdp;
+    //ABSL_CHECK(db->FindFileByName(file, &fdp));
+    const auto* file_descriptor = descriptor_pool->FindFileByName(file);
+    auto visitor = ShowVisitor{.options = show_options, .printer=printer};
+    WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
+    WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
+  }
+
+  #if 0
   if (show_options.files) {
     std::vector<std::string> file_names;
     db->FindAllFileNames(&file_names); 
@@ -208,6 +281,7 @@ bool Show(const protodb::ProtoDb& protodb,
       }
     }
   }
+  #endif
 
   return true;
 }
