@@ -142,7 +142,7 @@ class CommandLineInterface {
   bool ParseInputFiles(
       std::vector<std::string> input_files,
       DescriptorPool* descriptor_pool,
-      CustomSourceTree* source_tree,
+      //CustomSourceTree* source_tree,
       std::vector<const FileDescriptor*>* parsed_files);
 
 

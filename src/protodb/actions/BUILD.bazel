@@ -5,6 +5,7 @@ cc_library(
         ":action_explain",
         ":action_guess",
         ":action_show",
+        ":action_update",
         ":common",
     ],
 )
@@ -18,8 +19,8 @@ cc_library(
     deps = [
         ":common",
         "//src/protodb/db:protodb",
-        "//src/protodb/io:scanner",
         "//src/protodb/io:printer",
+        "//src/protodb/io:scanner",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
@@ -37,8 +38,8 @@ cc_library(
     deps = [
         ":common",
         "//src/protodb/db:protodb",
-        "//src/protodb/io:scanner",
         "//src/protodb/io:printer",
+        "//src/protodb/io:scanner",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
@@ -51,6 +52,25 @@ cc_library(
     name = "action_show",
     srcs = ["action_show.cc"],
     hdrs = ["action_show.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb:visitor",
+        "//src/protodb/db:protodb",
+        "//src/protodb/io:printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)
+
+cc_library(
+    name = "action_update",
+    srcs = ["action_update.cc"],
+    hdrs = ["action_update.h"],
     include_prefix = "protodb/actions",
     strip_include_prefix = "",
     deps = [
