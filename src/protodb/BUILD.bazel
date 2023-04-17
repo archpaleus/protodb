@@ -3,8 +3,10 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 
 cc_library(
     name = "visitor",
-    #srcs = [ "visitor.cc" ],
-    hdrs = ["visitor.h"],
+    hdrs = [
+        "comparing_visitor.h",
+        "visitor.h",
+    ],
     include_prefix = "protodb",
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
