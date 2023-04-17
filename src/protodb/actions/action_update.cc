@@ -58,9 +58,10 @@ struct BreakingChangeVisitor {
     if (!lhs) {
       printer.Emit(absl::StrCat("+file ", rhs->name(), "\n"));
     } else if (!rhs) {
-      //printer.Emit(absl::StrCat("-file ", lhs->name(), "\n"));
+      printer.Emit(absl::StrCat("-file ", lhs->name(), "\n"));
     } else {
-      //printer.Emit(absl::StrCat(" file ", lhs->name(), "\n"));
+      ABSL_CHECK_EQ(lhs->name(), rhs->name());
+      printer.Emit(absl::StrCat(" file ", lhs->name(), "\n"));
     }
   }
   void operator()(const Descriptor* lhs, const Descriptor* rhs) {

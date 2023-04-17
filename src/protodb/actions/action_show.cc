@@ -68,6 +68,7 @@ struct ShowOptions {
   bool fields = false;
   bool services = false;
   bool methods = false;
+  bool extensions = false;
 };
 
 struct ShowVisitor {
@@ -199,70 +200,14 @@ bool Show(const protodb::ProtoDb& protodb,
   std::vector<std::string> file_names;
   db->FindAllFileNames(&file_names); 
   for (const auto& file : file_names) {
-    //FileDescriptorProto fdp;
-    //ABSL_CHECK(db->FindFileByName(file, &fdp));
     const auto* file_descriptor = descriptor_pool->FindFileByName(file);
     auto visitor = ShowVisitor{.printer=printer};
     WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
     WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
   }
 
-  #if 0
-  if (show_options.files) {
-    std::vector<std::string> file_names;
-    db->FindAllFileNames(&file_names); 
-    absl::c_sort(file_names);
-    auto indent = printer.WithIndent();
-    for (const auto& file : file_names) {
-      printer.Emit(absl::StrCat(file, "\n"));
-      auto indent = printer.WithIndent();
-      if (show_options.messages) {
-        FileDescriptorProto fdp;
-        ABSL_CHECK(db->FindFileByName(file, &fdp));
-        const auto& package = fdp.package();
-        if (show_options.packages && !package.empty()) {
-          printer.Emit(absl::StrCat(package, "\n"));
-        }
-        auto indent = printer.WithIndent();
-        if (db->FindFileByName(file, &fdp)) {
-          for(int i = 0; i < fdp.message_type_size(); ++i ) {
-            const auto& descriptor_proto =  fdp.message_type(i);
-            ShowMessage(db, show_options, package, &descriptor_proto, &printer);
-          }
-        }
-      }
-    }
-  } else if (show_options.packages) {
-    std::vector<std::string> package_names;
-    db->FindAllPackageNames(&package_names); 
-    std::vector<std::string> message_names;
-    db->FindAllMessageNames(&message_names);
-    for (const auto& package : package_names) {
-      printer.Emit(absl::StrCat(package, "\n"));
-      auto indent = printer.WithIndent();
-      for (const auto& message : message_names) {
-        if (message.find(package) == 0 &&
-            message.rfind(".") == package.length()) {
-          printer.Emit(message.substr(1 + package.length()));
-          printer.Emit("\n");
-        }
-      }
-    }
-  } else if (show_options.messages) {
-    std::vector<std::string> message_names;
-    db->FindAllMessageNames(&message_names);
-    for (const auto& message : message_names) {
-      const auto* descriptor = descriptor_pool->FindMessageTypeByName(message);
-      if (descriptor) {
-        ShowMessage(db, show_options, descriptor, &printer);
-      }
-    }
-  }
-  #endif
-
   return true;
 }
-
 
 } // namespace
 } // namespace
