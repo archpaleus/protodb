@@ -4,12 +4,12 @@
 #include <span>
 #include <string>
 
-namespace google {
-namespace protobuf {
-
-class FileDescriptor;
+#include "google/protobuf/descriptor.h"
+#include "protodb/db/protodb.h"
 
 namespace protodb {
+
+using ::google::protobuf::FileDescriptor;
 
 class ProtoDb;
 
@@ -18,7 +18,5 @@ bool Update(const ProtoDb& protodb,
             const std::span<std::string>& params);
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_ACTION_UPDATE_H__

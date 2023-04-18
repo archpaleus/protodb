@@ -20,9 +20,11 @@
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_field.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::DescriptorDatabase;
+using ::google::protobuf::MergedDescriptorDatabase;
+using ::google::protobuf::SimpleDescriptorDatabase;
 
 class ProtoDb {
  public:
@@ -39,7 +41,5 @@ class ProtoDb {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif

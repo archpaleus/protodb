@@ -51,11 +51,10 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 using ::google::protobuf::compiler::SourceTree;
+using ::google::protobuf::io::ZeroCopyInputStream;
 
 // Represents an input file.
 // All files will have a virtual path; some files may have a disk path.
@@ -154,7 +153,7 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
                              std::string* disk_file);
 
   // implements SourceTree -------------------------------------------
-  io::ZeroCopyInputStream* Open(absl::string_view filename) override;
+  ZeroCopyInputStream* Open(absl::string_view filename) override;
 
   std::string GetLastErrorMessage() override;
 
@@ -176,16 +175,14 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
 
   // Like Open(), but returns the on-disk path in disk_file if disk_file is
   // non-NULL and the file could be successfully opened.
-  io::ZeroCopyInputStream* OpenVirtualFile(absl::string_view virtual_file,
+  ZeroCopyInputStream* OpenVirtualFile(absl::string_view virtual_file,
                                            std::string* disk_file);
 
   // Like Open() but given the actual on-disk path.
-  io::ZeroCopyInputStream* OpenDiskFile(absl::string_view filename);
+  ZeroCopyInputStream* OpenDiskFile(absl::string_view filename);
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #include "google/protobuf/port_undef.inc"
 

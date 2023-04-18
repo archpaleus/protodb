@@ -15,8 +15,6 @@
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/io/scan_context.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 static std::string WireTypeLetter(int wire_type) {
@@ -44,5 +42,3 @@ std::string ParsedFieldsGroup::to_string() const {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

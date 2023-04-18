@@ -15,11 +15,11 @@
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/wire_format_lite.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 using ::google::protobuf::internal::WireFormatLite;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::CodedInputStream;
 
 bool IsAsciiPrintable(std::string_view str) {
   for (char c : str) {
@@ -36,8 +36,8 @@ bool IsParseableAsMessage(std::string_view str) {
   if (str.empty()) return false;
 
   absl::Cord cord(str);
-  io::CordInputStream cord_input(&cord);
-  io::CodedInputStream cis(&cord_input);
+  CordInputStream cord_input(&cord);
+  CodedInputStream cis(&cord_input);
 
   cis.SetTotalBytesLimit(str.length());
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
@@ -56,5 +56,3 @@ bool IsParseableAsMessage(absl::Cord cord) {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

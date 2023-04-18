@@ -53,9 +53,22 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::FileDescriptor;
+using ::google::protobuf::MethodDescriptor;
+using ::google::protobuf::ServiceDescriptor;
+using ::google::protobuf::internal::WireFormatLite;
+using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::FileOutputStream;
+using ::google::protobuf::io::Printer;
 
 struct ShowOptions {
   bool files = false;
@@ -70,7 +83,7 @@ struct ShowOptions {
 };
 
 struct ShowVisitor {
-  io::Printer& printer;
+  Printer& printer;
 
   auto WithIndent() { return printer.WithIndent(); }
   void operator()(const FileDescriptor* descriptor) {
@@ -152,8 +165,8 @@ bool Show(const protodb::ProtoDb& protodb,
     }
   }
 
-  io::FileOutputStream out(STDOUT_FILENO);
-  io::Printer printer(&out, '$');
+  FileOutputStream out(STDOUT_FILENO);
+  Printer printer(&out, '$');
   std::vector<std::string> file_names;
   db->FindAllFileNames(&file_names);
   for (const auto& file : file_names) {
@@ -167,5 +180,3 @@ bool Show(const protodb::ProtoDb& protodb,
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

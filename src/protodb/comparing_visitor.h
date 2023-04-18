@@ -10,13 +10,23 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
-//#include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/descriptor.h"
-//#include "google/protobuf/descriptor_database.h"
 #include "protodb/visitor.h"
 
-namespace google {
-namespace protobuf {
+namespace protodb {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::FileDescriptor;
+using ::google::protobuf::MethodDescriptor;
+using ::google::protobuf::ServiceDescriptor;
+using ::google::protobuf::internal::WireFormatLite;
+using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::Printer;
 
 struct CompareOptions {
   bool files = false;
@@ -276,7 +286,6 @@ void CompareDescriptors(
       .Compare(lhs_descriptors, rhs_descriptors);
 }
 
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protodb
 
 #endif

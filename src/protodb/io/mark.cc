@@ -15,8 +15,6 @@
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/io/scan_context.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 Mark::Mark(const ScanContext& context)
@@ -45,5 +43,3 @@ Segment Mark::segment() {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

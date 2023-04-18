@@ -44,12 +44,24 @@
 #include "protodb/db/protodb.h"
 #include "protodb/visitor.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::FileDescriptor;
+using ::google::protobuf::MethodDescriptor;
+using ::google::protobuf::ServiceDescriptor;
+using ::google::protobuf::internal::WireFormatLite;
+using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::FileOutputStream;
+using ::google::protobuf::io::Printer;
+
 struct BreakingChangeVisitor {
-  io::Printer& printer;
+  Printer& printer;
 
   auto WithIndent() { return printer.WithIndent(); }
   void operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) {
@@ -127,8 +139,8 @@ bool Update(const protodb::ProtoDb& protodb,
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);
 
-  io::FileOutputStream out(STDOUT_FILENO);
-  io::Printer printer(&out, '$');
+  FileOutputStream out(STDOUT_FILENO);
+  Printer printer(&out, '$');
 
   std::vector<const FileDescriptor*> protodb_files;
   std::vector<std::string> protodb_file_names;
@@ -149,5 +161,3 @@ bool Update(const protodb::ProtoDb& protodb,
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

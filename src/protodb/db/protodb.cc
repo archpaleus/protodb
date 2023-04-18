@@ -57,9 +57,11 @@
 #endif
 #endif
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::FileDescriptorSet;
+using ::google::protobuf::FileDescriptorProto;
+using ::google::protobuf::SimpleDescriptorDatabase;
 
 namespace {
 
@@ -145,5 +147,3 @@ bool ProtoDb::LoadDatabase(const std::string& _path) {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

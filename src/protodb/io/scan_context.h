@@ -13,14 +13,16 @@
 #include "google/protobuf/io/coded_stream.h"
 #include "protodb/io/printer.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::DescriptorDatabase;
+using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::io::CodedInputStream;
 
 struct Printer;
 
 struct ScanContext {
-  ScanContext(io::CodedInputStream& cis, const absl::Cord* cord,
+  ScanContext(::google::protobuf::io::CodedInputStream& cis, const absl::Cord* cord,
               Printer* printer, DescriptorPool* pool,
               DescriptorDatabase* database)
       : cis(cis),
@@ -38,7 +40,7 @@ struct ScanContext {
   }
 
   // required
-  io::CodedInputStream& cis;
+  ::google::protobuf::io::CodedInputStream& cis;
 
   // optional
   const absl::Cord* cord;
@@ -49,7 +51,5 @@ struct ScanContext {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_IO_SCAN_CONTEXT_H__

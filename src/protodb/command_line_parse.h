@@ -26,9 +26,10 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::FileDescriptor;
+using ::google::protobuf::DescriptorPool;
 
 class ProtoDb;
 
@@ -144,8 +145,6 @@ class CommandLineInterface {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #include "google/protobuf/port_undef.inc"
 

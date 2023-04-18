@@ -14,8 +14,16 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 
-namespace google {
-namespace protobuf {
+namespace protodb {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::EnumValueDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::FileDescriptor;
+using ::google::protobuf::MethodDescriptor;
+using ::google::protobuf::ServiceDescriptor;
 
 struct WalkOptions {
   bool files = false;
@@ -182,7 +190,6 @@ void WalkDescriptors(const WalkOptions& walk_options,
       .Walk(descriptors);
 }
 
-}  // namespace protobuf
-}  // namespace google
+}  // namespace protodb
 
 #endif

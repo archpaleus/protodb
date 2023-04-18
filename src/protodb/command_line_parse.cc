@@ -66,11 +66,19 @@
 #endif
 #endif
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
-using namespace google::protobuf::compiler;
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::DynamicMessageFactory;
+using ::google::protobuf::FileDescriptorProto;
+using ::google::protobuf::FileDescriptorSet;
+using ::google::protobuf::Message;
+using ::google::protobuf::TextFormat;
+using ::google::protobuf::RepeatedPtrField;
+using ::google::protobuf::io::CodedOutputStream;
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::FileOutputStream;
+using ::google::protobuf::compiler::SourceTreeDescriptorDatabase;
 
 namespace {
 
@@ -427,9 +435,9 @@ static bool WriteFilesToDescriptorSet(
     return false;
   }
 
-  io::FileOutputStream out(fd);
+  FileOutputStream out(fd);
   {
-    io::CodedOutputStream coded_out(&out);
+    CodedOutputStream coded_out(&out);
     coded_out.SetSerializationDeterministic(true);
     if (!file_set.SerializeToCodedStream(&coded_out)) {
       std::cerr << output_path << ": " << strerror(out.GetErrno()) << std::endl;
@@ -673,7 +681,7 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
       custom_source_tree.get(), protodb->database());
-  source_tree_database->RecordErrorsTo(error_collector.get());
+  //source_tree_database->RecordErrorsTo(error_collector.get());
 
   auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
       source_tree_database.get(),
@@ -691,7 +699,8 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   std::copy(++arguments.begin(), arguments.end(), std::back_inserter(params));
 
   if (command == "version") {
-    std::cout << "libprotoc " << internal::ProtocVersionString(PROTOBUF_VERSION)
+    std::cout << "libprotoc "
+              << ::google::protobuf::internal::ProtocVersionString(PROTOBUF_VERSION)
               << PROTOBUF_VERSION_SUFFIX << std::endl;
     return PARSE_ARGUMENT_DONE_AND_EXIT;  // Exit without running compiler.
   } else if (command == "help") {
@@ -789,7 +798,7 @@ bool CommandLineInterface::Encode(const ProtoDb& protodb,
   DynamicMessageFactory dynamic_factory(descriptor_pool.get());
   std::unique_ptr<Message> message(dynamic_factory.GetPrototype(type)->New());
 
-  io::FileInputStream in(STDIN_FILENO);
+  FileInputStream in(STDIN_FILENO);
   if (!TextFormat::Parse(&in, message.get())) {
     std::cerr << "input: I/O error." << std::endl;
     return false;
@@ -814,7 +823,7 @@ bool CommandLineInterface::Decode(const ProtoDb& protodb,
   DynamicMessageFactory dynamic_factory(descriptor_pool.get());
   std::unique_ptr<Message> message(dynamic_factory.GetPrototype(type)->New());
 
-  io::FileInputStream in(STDIN_FILENO);
+  FileInputStream in(STDIN_FILENO);
   if (!message->ParsePartialFromZeroCopyStream(&in)) {
     std::cerr << "Failed to parse input." << std::endl;
     return false;
@@ -825,7 +834,7 @@ bool CommandLineInterface::Decode(const ProtoDb& protodb,
               << message->InitializationErrorString() << std::endl;
   }
 
-  io::FileOutputStream out(STDOUT_FILENO);
+  FileOutputStream out(STDOUT_FILENO);
   if (!TextFormat::Print(*message, &out)) {
     std::cerr << "output: I/O error." << std::endl;
     return false;
@@ -835,5 +844,3 @@ bool CommandLineInterface::Decode(const ProtoDb& protodb,
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

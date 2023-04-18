@@ -14,9 +14,9 @@
 #include "protodb/io/printer.h"
 #include "protodb/io/scan_context.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::internal::WireFormatLite;
 
 // ParsedField represents a field parsed from data "on the wire"
 struct ParsedField {
@@ -24,7 +24,7 @@ struct ParsedField {
   const Segment field_segment;
 
   const uint32_t field_number;
-  const internal::WireFormatLite::WireType wire_type;
+  const WireFormatLite::WireType wire_type;
 
   struct LengthDelimited {
     // This referes to the data in the length-delimited field, exclusive of the
@@ -58,7 +58,7 @@ struct ParsedField {
 // from the ParsedField records we parsed.
 struct ParsedFieldsGroup {
   const uint32_t field_number = -1;
-  const internal::WireFormatLite::WireType wire_type;
+  const WireFormatLite::WireType wire_type;
   const bool is_repeated = false;
   bool is_message_likely = false;
 
@@ -78,7 +78,5 @@ struct ParsedFieldsGroup {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_IO_PARSING_SCANNER_H__

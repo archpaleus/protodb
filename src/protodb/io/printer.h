@@ -8,8 +8,6 @@
 
 #include <string>
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 struct Printer {
@@ -49,7 +47,5 @@ struct Printer {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_IO_PRINTER_H__

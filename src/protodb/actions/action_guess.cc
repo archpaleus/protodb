@@ -51,9 +51,14 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::TextFormat;
+using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::ZeroCopyInputStream;
 
 namespace {
 
@@ -68,12 +73,12 @@ struct GuessContext : public ScanContext {
 
 static bool WireTypeValid(int wire_type) {
   switch (wire_type) {
-    case internal::WireFormatLite::WIRETYPE_VARINT:
-    case internal::WireFormatLite::WIRETYPE_FIXED64:
-    case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED:
-    case internal::WireFormatLite::WIRETYPE_FIXED32:
-    case internal::WireFormatLite::WIRETYPE_START_GROUP:
-    case internal::WireFormatLite::WIRETYPE_END_GROUP:
+    case WireFormatLite::WIRETYPE_VARINT:
+    case WireFormatLite::WIRETYPE_FIXED64:
+    case WireFormatLite::WIRETYPE_LENGTH_DELIMITED:
+    case WireFormatLite::WIRETYPE_FIXED32:
+    case WireFormatLite::WIRETYPE_START_GROUP:
+    case WireFormatLite::WIRETYPE_END_GROUP:
       return true;
     default:
       return false;
@@ -82,7 +87,7 @@ static bool WireTypeValid(int wire_type) {
 
 }  // namespace
 
-bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis,
+bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
                         std::vector<ParsedField>& fields) {
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit() &&
          cis.BytesUntilLimit()) {
@@ -95,8 +100,7 @@ bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis,
     tag_mark.stop();
 
     const uint32_t field_number = tag >> 3;
-    const internal::WireFormatLite::WireType wire_type =
-        internal::WireFormatLite::GetTagWireType(tag);
+    const auto wire_type = WireFormatLite::GetTagWireType(tag);
     if (!WireTypeValid(wire_type)) {
       //context->EmitWarning("");
       //std::cout << "[ field " << field_number << ": invalid wire type " << WireTypeLetter(wire_type) << " ] " << std::endl;
@@ -104,7 +108,7 @@ bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis,
     }
 
     Mark field_mark(context);
-    if (wire_type == internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+    if (wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       uint32_t length;
       if (!cis.ReadVarint32(&length)) {
         // This might frequently fail if we are parsing a blob that isn't actually a length delimited field.
@@ -144,7 +148,7 @@ bool ScanInputForFields(const GuessContext& context, io::CodedInputStream& cis,
       };
       fields.emplace_back(std::move(field_info));
     } else {
-      internal::WireFormatLite::SkipField(&cis, tag);
+      WireFormatLite::SkipField(&cis, tag);
       ParsedField field_info = {.tag_segment = tag_mark.segment(),
                                 .field_segment = field_mark.segment(),
                                 .field_number = field_number,
@@ -166,7 +170,7 @@ std::optional<ParsedFieldsGroup> FieldsToGroup(
 
   std::optional<ParsedFieldsGroup> fp;
   for (const ParsedField* field : fields) {
-    if (field->wire_type == internal::WireFormatLite::WIRETYPE_END_GROUP)
+    if (field->wire_type == WireFormatLite::WIRETYPE_END_GROUP)
       continue;
     if (field->wire_type != wire_type) {
       // DebugLog(absl::StrCat("warning: mismatched types for same field: ",
@@ -215,10 +219,10 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
     score -= 2;
   }
 
-  auto field_type = static_cast<internal::WireFormatLite::FieldType>(
+  auto field_type = static_cast<WireFormatLite::FieldType>(
       field_descriptor->type());
   if (group.wire_type ==
-      internal::WireFormatLite::WireTypeForFieldType(field_type)) {
+      WireFormatLite::WireTypeForFieldType(field_type)) {
     score += 1;
   } else {
     score -= 10;
@@ -276,9 +280,9 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
                   std::set<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(protodb.database(), nullptr);
 
-  io::CordInputStream cord_input(&data);
-  io::ZeroCopyInputStream* zcis = &cord_input;
-  io::CodedInputStream cis(zcis);
+  CordInputStream cord_input(&data);
+  ZeroCopyInputStream* zcis = &cord_input;
+  CodedInputStream cis(zcis);
 
   GuessContext context{cis, &data, nullptr, pool.get(), protodb.database()};
   cis.SetTotalBytesLimit(data.size());
@@ -321,19 +325,17 @@ bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
     std::cout << "Reading from " << args[0] << std::endl;
     auto fp = fopen(args[0].c_str(), "rb");
     int fd = fileno(fp);
-    io::FileInputStream in(fd);
+    FileInputStream in(fd);
     in.ReadCord(&cord, 1 << 20);
   } else {
-    io::FileInputStream in(STDIN_FILENO);
+    FileInputStream in(STDIN_FILENO);
     in.ReadCord(&cord, 1 << 20);
   }
 
   std::set<std::string> matches;
-  google::protobuf::protodb::Guess(cord, protodb, &matches);
+  protodb::Guess(cord, protodb, &matches);
 
   return true;
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

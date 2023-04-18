@@ -11,8 +11,6 @@
 
 #include "protodb/io/scan_context.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 struct Segment {
@@ -40,7 +38,5 @@ struct Mark {
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_IO_PRINTER_H__

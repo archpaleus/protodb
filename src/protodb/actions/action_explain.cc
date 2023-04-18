@@ -45,9 +45,15 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::EnumDescriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::internal::WireFormatLite;
+using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
+using ::google::protobuf::io::FileInputStream;
 
 static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
@@ -87,12 +93,12 @@ static std::string WireTypeName(int wire_type) {
 }
 static bool WireTypeValid(int wire_type) {
   switch (wire_type) {
-    case internal::WireFormatLite::WIRETYPE_VARINT:            // 0
-    case internal::WireFormatLite::WIRETYPE_FIXED64:           // 1
-    case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED:  // 2
-    case internal::WireFormatLite::WIRETYPE_START_GROUP:       // 3
-    case internal::WireFormatLite::WIRETYPE_END_GROUP:         // 4
-    case internal::WireFormatLite::WIRETYPE_FIXED32:           // 5
+    case WireFormatLite::WIRETYPE_VARINT:            // 0
+    case WireFormatLite::WIRETYPE_FIXED64:           // 1
+    case WireFormatLite::WIRETYPE_LENGTH_DELIMITED:  // 2
+    case WireFormatLite::WIRETYPE_START_GROUP:       // 3
+    case WireFormatLite::WIRETYPE_END_GROUP:         // 4
+    case WireFormatLite::WIRETYPE_FIXED32:           // 5
       return true;
     default:
       // There are two other wire types possible in 3 bits: 6 & 7
@@ -132,7 +138,7 @@ struct Tag {
   const ExplainSegment segment;
   const uint32_t tag;
   const uint32_t field_number;
-  const internal::WireFormatLite::WireType wire_type;
+  const WireFormatLite::WireType wire_type;
   const FieldDescriptor* field_descriptor;
 };
 
@@ -241,7 +247,7 @@ struct ExplainPrinter : public Printer {
 };
 
 struct ExplainContext : public ScanContext {
-  ExplainContext(io::CodedInputStream& cis, const absl::Cord& cord,
+  ExplainContext(CodedInputStream& cis, const absl::Cord& cord,
                  ExplainPrinter& explain_printer, DescriptorPool* pool,
                  DescriptorDatabase* database)
       : ScanContext(cis, &cord, &explain_printer, pool, database),
@@ -326,7 +332,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor);
 
 std::optional<Tag> ReadTag(const ExplainContext& context,
                            const Descriptor* descriptor) {
-  io::CodedInputStream& cis = context.cis;
+  CodedInputStream& cis = context.cis;
   ExplainMark tag_mark(context);
   uint32_t tag = 0;
   if (!cis.ReadVarint32(&tag)) {
@@ -336,8 +342,7 @@ std::optional<Tag> ReadTag(const ExplainContext& context,
   const auto tag_segment = tag_mark.segment();
   tag_mark.stop();
   const uint32_t field_number = tag >> 3;
-  const internal::WireFormatLite::WireType wire_type =
-      internal::WireFormatLite::GetTagWireType(tag);
+  const auto wire_type = WireFormatLite::GetTagWireType(tag);
 
   ABSL_CHECK_LT(wire_type, 1 << 4);
   if (!WireTypeValid(wire_type)) {
@@ -362,8 +367,8 @@ std::optional<Tag> ReadTag(const ExplainContext& context,
 std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
                                                const Tag& tag) {
   ABSL_CHECK_EQ(tag.wire_type,
-                internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
-  io::CodedInputStream& cis = context.cis;
+                WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
+  CodedInputStream& cis = context.cis;
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
   uint32_t length = 0;
@@ -441,7 +446,7 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
 
 std::optional<Field> ReadField_VarInt(const ExplainContext& context,
                                       const Tag& tag) {
-  ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_VARINT);
+  ABSL_CHECK_EQ(tag.wire_type, WireFormatLite::WIRETYPE_VARINT);
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
   ExplainMark field_mark(context);
@@ -459,7 +464,7 @@ std::optional<Field> ReadField_VarInt(const ExplainContext& context,
 
 std::optional<Field> ReadField_Fixed32(const ExplainContext& context,
                                        const Tag& tag) {
-  ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_FIXED32);
+  ABSL_CHECK_EQ(tag.wire_type, WireFormatLite::WIRETYPE_FIXED32);
 
   ExplainMark field_mark(context);
   uint32_t fixed32;
@@ -477,7 +482,7 @@ std::optional<Field> ReadField_Fixed32(const ExplainContext& context,
 
 std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
                                        const Tag& tag) {
-  ABSL_CHECK_EQ(tag.wire_type, internal::WireFormatLite::WIRETYPE_FIXED64);
+  ABSL_CHECK_EQ(tag.wire_type, WireFormatLite::WIRETYPE_FIXED64);
 
   ExplainMark field_mark(context);
   uint64_t fixed64;
@@ -494,7 +499,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
-  io::CodedInputStream& cis = context.cis;
+  CodedInputStream& cis = context.cis;
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);
 
@@ -506,7 +511,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
 
     ExplainMark field_mark(context);
     switch (tag->wire_type) {
-      case internal::WireFormatLite::WIRETYPE_VARINT: {
+      case WireFormatLite::WIRETYPE_VARINT: {
         auto field = ReadField_VarInt(context, tag.value());
         if (!field) {
           context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
@@ -515,7 +520,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
         context.explain_printer.Emit(*tag, *field);
         break;
       }
-      case internal::WireFormatLite::WIRETYPE_FIXED32: {
+      case WireFormatLite::WIRETYPE_FIXED32: {
         auto field = ReadField_Fixed32(context, tag.value());
         if (!field) {
           context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
@@ -524,7 +529,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
         context.explain_printer.Emit(*tag, *field);
         break;
       }
-      case internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED: {
+      case WireFormatLite::WIRETYPE_LENGTH_DELIMITED: {
         auto field = ReadField_LengthDelimited(context, tag.value());
         if (!field) {
           context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
@@ -533,8 +538,8 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
 
         context.explain_printer.Emit(*tag, *field);
         if (field->is_valid_message) {
-          io::CordInputStream cord_input(context.cord);
-          io::CodedInputStream chunk_cis(&cord_input);
+          CordInputStream cord_input(context.cord);
+          CodedInputStream chunk_cis(&cord_input);
           chunk_cis.SetTotalBytesLimit(field->chunk_segment->start +
                                        field->chunk_segment->length);
           chunk_cis.Skip(field->chunk_segment->start);
@@ -552,7 +557,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
         }
         break;
       }
-      case internal::WireFormatLite::WIRETYPE_FIXED64: {
+      case WireFormatLite::WIRETYPE_FIXED64: {
         auto field = ReadField_Fixed64(context, tag.value());
         if (!field) {
           context.explain_printer.EmitInvalidField(tag.value(),
@@ -564,7 +569,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
       }
       default:
         std::cerr << "unexpected wire type" << std::endl;
-        if (!internal::WireFormatLite::SkipField(&context.cis, tag->tag))
+        if (!WireFormatLite::SkipField(&context.cis, tag->tag))
           return false;
     }
   }
@@ -614,16 +619,16 @@ bool Explain(const ProtoDb& protodb, const std::span<std::string>& params) {
       return false;
     }
     int fd = fileno(fp);
-    io::FileInputStream in(fd);
+    FileInputStream in(fd);
     in.ReadCord(&cord, 10 << 20);
   } else {
     std::cerr << "Reading from stdin" << std::endl;
-    io::FileInputStream in(STDIN_FILENO);
+    FileInputStream in(STDIN_FILENO);
     in.ReadCord(&cord, 10 << 20);
   }
 
-  io::CordInputStream cord_input(&cord);
-  io::CodedInputStream cis(&cord_input);
+  CordInputStream cord_input(&cord);
+  CodedInputStream cis(&cord_input);
   cis.SetTotalBytesLimit(cord.size());
 
   ExplainPrinter explain_printer;
@@ -634,5 +639,3 @@ bool Explain(const ProtoDb& protodb, const std::span<std::string>& params) {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

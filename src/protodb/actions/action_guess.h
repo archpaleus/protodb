@@ -21,14 +21,10 @@
 #include "google/protobuf/repeated_field.h"
 #include "protodb/db/protodb.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args);
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 #endif  // PROTODB_ACTION_GUESS_H__

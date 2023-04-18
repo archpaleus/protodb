@@ -2,8 +2,6 @@
 #include "protodb/actions/action_guess.h"
 #include "protodb/command_line_parse.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
 
 int ProtodbMain(int argc, char* argv[]) {
@@ -16,9 +14,7 @@ int ProtodbMain(int argc, char* argv[]) {
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
 
 int main(int argc, char* argv[]) {
-  return google::protobuf::protodb::ProtodbMain(argc, argv);
+  return ::protodb::ProtodbMain(argc, argv);
 }

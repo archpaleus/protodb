@@ -21,9 +21,9 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::io::FileInputStream;
 
 static bool FileExists(std::string_view path) {
   int fd;
@@ -192,7 +192,7 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
   // Verify that we can open the file.  Note that this also has the side-effect
   // of verifying that we are not canonicalizing away any non-existent
   // directories.
-  std::unique_ptr<io::ZeroCopyInputStream> stream(OpenDiskFile(disk_file));
+  std::unique_ptr<ZeroCopyInputStream> stream(OpenDiskFile(disk_file));
   if (stream == nullptr) {
     return CANNOT_OPEN;
   }
@@ -203,12 +203,12 @@ bool CustomSourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
                                              std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__;
 
-  std::unique_ptr<io::ZeroCopyInputStream> stream(
+  std::unique_ptr<ZeroCopyInputStream> stream(
       OpenVirtualFile(virtual_file, disk_file));
   return stream != nullptr;
 }
 
-io::ZeroCopyInputStream* CustomSourceTree::Open(absl::string_view filename) {
+ZeroCopyInputStream* CustomSourceTree::Open(absl::string_view filename) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << filename;
   return OpenVirtualFile(filename, nullptr);
 }
@@ -217,7 +217,7 @@ std::string CustomSourceTree::GetLastErrorMessage() {
   return last_error_message_;
 }
 
-io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
+ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
     absl::string_view virtual_file, std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_file << " " << disk_file;
   if (virtual_file != CanonicalizePath(virtual_file) ||
@@ -237,7 +237,7 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
       if (disk_file) {
         *disk_file = input_file.disk_path;
       }
-      io::ZeroCopyInputStream* stream = OpenDiskFile(input_file.disk_path);
+      ZeroCopyInputStream* stream = OpenDiskFile(input_file.disk_path);
       return stream;
     }
   }
@@ -248,42 +248,17 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
         absl::StrCat(input_root.disk_path, "/", virtual_file);
     if (FileExists(tmp_disk_path)) {
       *disk_file = tmp_disk_path;
-      io::ZeroCopyInputStream* stream = OpenDiskFile(*disk_file);
+      ZeroCopyInputStream* stream = OpenDiskFile(*disk_file);
       return stream;
     }
   }
-
-#if 0
-  for (const auto& mapping : mappings_) {
-    std::string temp_disk_file;
-    if (ApplyMapping(virtual_file, mapping.virtual_path, mapping.disk_path,
-                     &temp_disk_file)) {
-      ABSL_LOG(INFO) << __FUNCTION__ << " mapping on disk : " << virtual_file << " -> " << disk_file;
-      io::ZeroCopyInputStream* stream = OpenDiskFile(temp_disk_file);
-      if (stream != nullptr) {
-        if (disk_file != nullptr) {
-          *disk_file = temp_disk_file;
-        }
-        return stream;
-      }
-
-      if (errno == EACCES) {
-        // The file exists but is not readable.
-        last_error_message_ =
-            absl::StrCat("Read access is denied for file: ", temp_disk_file);
-        ABSL_LOG(WARNING) << last_error_message_;
-        return nullptr;
-      }
-    }
-  }
-#endif
 
   ABSL_LOG(WARNING) << "Virtual file not found: " << virtual_file;
   last_error_message_ = "File not found.";
   return nullptr;
 }
 
-io::ZeroCopyInputStream* CustomSourceTree::OpenDiskFile(
+ZeroCopyInputStream* CustomSourceTree::OpenDiskFile(
     absl::string_view filename) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << filename;
 
@@ -303,7 +278,7 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenDiskFile(
   } while (file_descriptor < 0 && errno == EINTR);
   if (file_descriptor >= 0) {
     ABSL_LOG(INFO) << "open ok";
-    io::FileInputStream* result = new io::FileInputStream(file_descriptor);
+    FileInputStream* result = new FileInputStream(file_descriptor);
     ABSL_CHECK(result);
     result->SetCloseOnDelete(true);
     return result;
@@ -314,5 +289,3 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenDiskFile(
 }
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google

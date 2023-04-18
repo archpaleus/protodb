@@ -13,12 +13,10 @@
 #include "google/protobuf/io/zero_copy_stream.h"
 #include "protodb/source_tree.h"
 
-// Must be included last.
-#include "google/protobuf/port_def.inc"
-
-namespace google {
-namespace protobuf {
 namespace protodb {
+
+using ::google::protobuf::Message;
+using ::google::protobuf::io::ErrorCollector;
 
 // If the importer encounters problems while trying to import the proto files,
 // it reports them to a MultiFileErrorCollector.
@@ -27,21 +25,21 @@ class MultiFileErrorCollector {
   MultiFileErrorCollector() {}
   MultiFileErrorCollector(const MultiFileErrorCollector&) = delete;
   MultiFileErrorCollector& operator=(const MultiFileErrorCollector&) = delete;
-  virtual ~MultiFileErrorCollector();
+  virtual ~MultiFileErrorCollector() {}
 
   // Line and column numbers are zero-based.  A line number of -1 indicates
   // an error with the entire file (e.g. "not found").
   virtual void RecordError(absl::string_view filename, int line, int column,
                            absl::string_view message) {
-    PROTOBUF_IGNORE_DEPRECATION_START
+    //PROTOBUF_IGNORE_DEPRECATION_START
     AddError(std::string(filename), line, column, std::string(message));
-    PROTOBUF_IGNORE_DEPRECATION_STOP
+    //PROTOBUF_IGNORE_DEPRECATION_STOP
   }
   virtual void RecordWarning(absl::string_view filename, int line, int column,
                              absl::string_view message) {
-    PROTOBUF_IGNORE_DEPRECATION_START
+    //PROTOBUF_IGNORE_DEPRECATION_START
     AddWarning(std::string(filename), line, column, std::string(message));
-    PROTOBUF_IGNORE_DEPRECATION_STOP
+    //PROTOBUF_IGNORE_DEPRECATION_STOP
   }
 
  private:
@@ -59,8 +57,8 @@ class MultiFileErrorCollector {
 };
 
 // A MultiFileErrorCollector that prints errors to stderr.
-class ErrorPrinter : public compiler::MultiFileErrorCollector,
-                     public io::ErrorCollector,
+class ErrorPrinter : public MultiFileErrorCollector,
+                     public ErrorCollector,
                      public DescriptorPool::ErrorCollector {
  public:
   ErrorPrinter(CustomSourceTree* tree = nullptr)
@@ -136,9 +134,5 @@ class ErrorPrinter : public compiler::MultiFileErrorCollector,
 };
 
 }  // namespace protodb
-}  // namespace protobuf
-}  // namespace google
-
-#include "google/protobuf/port_undef.inc"
 
 #endif  // PROTODB_ERROR_PRINTER_H__
