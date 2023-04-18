@@ -1,5 +1,5 @@
 syntax = "proto2";
 
 message ProtoId {
-  optional uint64 id = 1;    
+  optional uint64 id = 1;
 }
