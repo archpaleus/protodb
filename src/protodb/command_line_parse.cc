@@ -27,8 +27,6 @@
 #include <sys/sysctl.h>
 #endif
 
-#include "google/protobuf/stubs/common.h"
-
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
@@ -191,8 +189,7 @@ int CommandLineInterface::Run(int argc, const char* const argv[]) {
 }
 
 bool CommandLineInterface::InitializeCustomSourceTree(
-    std::vector<std::string> input_params,
-    CustomSourceTree* source_tree,
+    std::vector<std::string> input_params, CustomSourceTree* source_tree,
     DescriptorDatabase* fallback_database) {
   std::vector<std::pair<std::string, std::string>> proto_path_;
 
@@ -244,8 +241,7 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
 }  // namespace
 
 bool CommandLineInterface::ParseInputFiles(
-    std::vector<std::string> input_files,
-    DescriptorPool* descriptor_pool,
+    std::vector<std::string> input_files, DescriptorPool* descriptor_pool,
     std::vector<const FileDescriptor*>* parsed_files) {
   for (const auto& input_file : input_files) {
     descriptor_pool->AddUnusedImportTrackFile(input_file);
