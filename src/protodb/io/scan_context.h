@@ -20,20 +20,26 @@ namespace protodb {
 struct Printer;
 
 struct ScanContext {
-  ScanContext(io::CodedInputStream& cis, const absl::Cord* cord, Printer* printer, DescriptorPool* pool, DescriptorDatabase* database)
-      : cis(cis), cord(cord), printer(printer), descriptor_pool(pool), descriptor_database(database) {}
+  ScanContext(io::CodedInputStream& cis, const absl::Cord* cord,
+              Printer* printer, DescriptorPool* pool,
+              DescriptorDatabase* database)
+      : cis(cis), cord(cord), descriptor_pool(pool),
+        descriptor_database(database), printer(printer) {}
   ScanContext(const ScanContext& parent) 
-      : cis(parent.cis), cord(parent.cord), printer(parent.printer), descriptor_pool(parent.descriptor_pool), descriptor_database(parent.descriptor_database)
-  {
+      : cis(parent.cis), cord(parent.cord),
+        descriptor_pool(parent.descriptor_pool),
+        descriptor_database(parent.descriptor_database),
+        printer(parent.printer) {
     if (printer) indent.emplace(printer->WithIndent());
   }
 
+  // required
   io::CodedInputStream& cis;
 
+   // optional
   const absl::Cord* cord;
   DescriptorPool* descriptor_pool;
   DescriptorDatabase* descriptor_database;
-
   Printer* printer;
   std::optional<Printer::Indent> indent;
 };

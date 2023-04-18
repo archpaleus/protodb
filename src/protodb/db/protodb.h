@@ -24,17 +24,11 @@ namespace google {
 namespace protobuf {
 namespace protodb {
 
-namespace {
-std::unique_ptr<SimpleDescriptorDatabase>
-PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name);
-}
-
 class ProtoDb {
  public:
+  bool LoadDatabase(const std::string& path);
 
   DescriptorDatabase* database() const { return merged_database_.get(); }
-
-  bool LoadDatabase(const std::string& path);
 
  protected:
   std::filesystem::path protodb_path_;
