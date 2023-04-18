@@ -173,8 +173,7 @@ struct ExplainPrinter : public Printer {
         std::cout << termcolors::kReset;
       }
       if (!field.message_type.empty()) {
-        //std::cout << termcolors::kYellow;
-        //std::cout << termcolors::kBold << termcolors::kWhite;
+        std::cout << termcolors::kBold << termcolors::kWhite;
         std::cout << field.message_type << " ";
         std::cout << termcolors::kReset;
       }
