@@ -11,7 +11,6 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/io/zero_copy_stream.h"
-
 #include "protodb/source_tree.h"
 
 // Must be included last.
@@ -60,15 +59,12 @@ class MultiFileErrorCollector {
 };
 
 // A MultiFileErrorCollector that prints errors to stderr.
-class ErrorPrinter
-    : public compiler::MultiFileErrorCollector,
-      public io::ErrorCollector,
-      public DescriptorPool::ErrorCollector {
+class ErrorPrinter : public compiler::MultiFileErrorCollector,
+                     public io::ErrorCollector,
+                     public DescriptorPool::ErrorCollector {
  public:
   ErrorPrinter(CustomSourceTree* tree = nullptr)
-      : tree_(tree),
-        found_errors_(false),
-        found_warnings_(false) {}
+      : tree_(tree), found_errors_(false), found_warnings_(false) {}
   ~ErrorPrinter() override {}
 
   // implements MultiFileErrorCollector ------------------------------

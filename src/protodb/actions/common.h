@@ -20,8 +20,8 @@ bool IsAsciiPrintable(absl::Cord str);
 bool IsParseableAsMessage(std::string_view str);
 bool IsParseableAsMessage(absl::Cord str);
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
-#endif // PROTODB_IO_COMMON_H__
+#endif  // PROTODB_IO_COMMON_H__

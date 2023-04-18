@@ -2,13 +2,13 @@
 #define PROTODB_H__
 
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 #include <variant>
-#include <filesystem>
+#include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -32,13 +32,14 @@ class ProtoDb {
 
  protected:
   std::filesystem::path protodb_path_;
-  std::vector<std::unique_ptr<SimpleDescriptorDatabase>> databases_per_descriptor_set_;
+  std::vector<std::unique_ptr<SimpleDescriptorDatabase>>
+      databases_per_descriptor_set_;
   std::vector<DescriptorDatabase*> raw_databases_per_descriptor_set_;
   std::unique_ptr<MergedDescriptorDatabase> merged_database_;
 };
 
-} // namepsace protodb 
-} // namepsace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
 #endif

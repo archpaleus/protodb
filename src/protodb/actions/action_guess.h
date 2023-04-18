@@ -27,8 +27,8 @@ namespace protodb {
 
 bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args);
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
-#endif // PROTODB_ACTION_GUESS_H__
+#endif  // PROTODB_ACTION_GUESS_H__

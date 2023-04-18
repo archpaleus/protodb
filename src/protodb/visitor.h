@@ -6,8 +6,8 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "google/protobuf/compiler/importer.h"
@@ -19,7 +19,7 @@ namespace protobuf {
 
 struct WalkOptions {
   bool files = false;
-  bool packages = false; // not supported
+  bool packages = false;  // not supported
   bool messages = false;
   bool enums = false;
   bool enum_values = false;
@@ -30,15 +30,15 @@ struct WalkOptions {
 
   static constexpr auto All() {
     return WalkOptions{
-      .files = true,
-      .packages = true,
-      .messages = true,
-      .enums = true,
-      .enum_values = true,
-      .fields = true,
-      .services = true,
-      .methods = true,
-      .extensions = true,
+        .files = true,
+        .packages = true,
+        .messages = true,
+        .enums = true,
+        .enum_values = true,
+        .fields = true,
+        .services = true,
+        .methods = true,
+        .extensions = true,
     };
   }
 };
@@ -51,14 +51,14 @@ struct DescriptorVisitor {
 
   auto indent() { return visit_fn.WithIndent(); }
 
-  void Walk(const FieldDescriptor* descriptor) { 
+  void Walk(const FieldDescriptor* descriptor) {
     if (descriptor->is_extension()) {
       if (options.extensions) {
-        visit_fn(descriptor); 
+        visit_fn(descriptor);
       }
     } else {
       if (options.fields) {
-        visit_fn(descriptor); 
+        visit_fn(descriptor);
       }
     }
   }
@@ -66,7 +66,7 @@ struct DescriptorVisitor {
   void Walk(const EnumDescriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
     if (options.enums) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
       with_indent.emplace(indent());
     }
     for (int i = 0; i < descriptor->value_count(); i++) {
@@ -76,14 +76,14 @@ struct DescriptorVisitor {
 
   void Walk(const EnumValueDescriptor* descriptor) {
     if (options.enum_values) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
     }
   }
 
   void Walk(const ServiceDescriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
     if (options.services) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
       with_indent.emplace(indent());
     }
     for (int i = 0; i < descriptor->method_count(); i++) {
@@ -93,14 +93,14 @@ struct DescriptorVisitor {
 
   void Walk(const MethodDescriptor* descriptor) {
     if (options.methods) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
     }
   }
 
   void Walk(const Descriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
     if (options.messages) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
       with_indent.emplace(indent());
     }
     for (int i = 0; i < descriptor->enum_type_count(); i++) {
@@ -120,7 +120,7 @@ struct DescriptorVisitor {
   void Walk(const FileDescriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
     if (options.files) {
-      visit_fn(descriptor); 
+      visit_fn(descriptor);
       with_indent.emplace(indent());
     }
     for (int i = 0; i < descriptor->message_type_count(); i++) {
@@ -147,41 +147,42 @@ struct DescriptorVisitor {
 // The visitor does not need to handle all possible node types. Types that are
 // not visitable via `visitor` will be ignored.
 template <typename VisitFunctor>
-void WalkDescriptor(
-    const WalkOptions& walk_options,
-    const FileDescriptor* descriptor,
-    VisitFunctor visit_fn) {
+void WalkDescriptor(const WalkOptions& walk_options,
+                    const FileDescriptor* descriptor, VisitFunctor visit_fn) {
   struct CompleteVisitFunctor : VisitFunctor {
     using VisitFunctor::operator();
-    explicit CompleteVisitFunctor(VisitFunctor visit_fn) : VisitFunctor(visit_fn) {}
+    explicit CompleteVisitFunctor(VisitFunctor visit_fn)
+        : VisitFunctor(visit_fn) {}
     void operator()(const void*) const {}
   };
   DescriptorVisitor<CompleteVisitFunctor>{
-    .options = walk_options,
-    .visit_fn = CompleteVisitFunctor(visit_fn),
-   }.Walk(descriptor);
+      .options = walk_options,
+      .visit_fn = CompleteVisitFunctor(visit_fn),
+  }
+      .Walk(descriptor);
 }
 
 // The visitor does not need to handle all possible node types. Types that are
 // not visitable via `visitor` will be ignored.
 template <typename VisitFunctor>
-void WalkDescriptors(
-    const WalkOptions& walk_options,
-    std::vector<const FileDescriptor*>& descriptors,
-    VisitFunctor visit_fn) {
+void WalkDescriptors(const WalkOptions& walk_options,
+                     std::vector<const FileDescriptor*>& descriptors,
+                     VisitFunctor visit_fn) {
   struct CompleteVisitFunctor : VisitFunctor {
     using VisitFunctor::operator();
-    explicit CompleteVisitFunctor(VisitFunctor visit_fn) : VisitFunctor(visit_fn) {}
+    explicit CompleteVisitFunctor(VisitFunctor visit_fn)
+        : VisitFunctor(visit_fn) {}
     void operator()(const void*) const {}
   };
 
   DescriptorVisitor<CompleteVisitFunctor>{
-    .options = walk_options,
-    .visit_fn = CompleteVisitor(visit_fn),
-   }.Walk(descriptors);
+      .options = walk_options,
+      .visit_fn = CompleteVisitor(visit_fn),
+  }
+      .Walk(descriptors);
 }
 
-} // namespace google
-} // namespace protobuf
- 
+}  // namespace protobuf
+}  // namespace google
+
 #endif

@@ -19,7 +19,6 @@
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
 #include "google/protobuf/repeated_field.h"
-
 #include "protodb/actions/action_guess.h"
 #include "protodb/actions/action_show.h"
 #include "protodb/source_tree.h"
@@ -31,21 +30,19 @@ namespace google {
 namespace protobuf {
 namespace protodb {
 
-//using compiler::CustomSourceTree;
-
 class ProtoDb;
 
 // The following two are equivalent when using a phsyical file path
-//   protodb add src//foo.proto 
-//   protodb add src// src/foo.proto 
+//   protodb add src//foo.proto
+//   protodb add src// src/foo.proto
 //
 // The following two are equivalent where the latter uses a virtual filepath
-//   protodb add src//foo.proto 
-//   protodb add src// //foo.proto 
+//   protodb add src//foo.proto
+//   protodb add src// //foo.proto
 
-// A .proto file can be virtual or physical.  In this case, both will be searched
-// and the physical file path will take precedence
-//   protodb add src// foo.proto 
+// A .proto file can be virtual or physical.  In this case, both will be
+// searched and the physical file path will take precedence
+//   protodb add src// foo.proto
 
 // The .proto file to compile can be specified on the command line using either
 // its physical file path, or a virtual path relative to a directory specified
@@ -75,10 +72,9 @@ class CommandLineInterface {
   bool Decode(const ProtoDb& pool, std::string codec_type);
   bool DecodeRaw(const ProtoDb& pool, std::string codec_type);
 
-
-  bool FindVirtualFileInProtoPath(
-      CustomSourceTree* source_tree, std::string input_file,
-      std::string* disk_file); 
+  bool FindVirtualFileInProtoPath(CustomSourceTree* source_tree,
+                                  std::string input_file,
+                                  std::string* disk_file);
 
   // Remaps the proto file so that it is relative to one of the directories
   // in proto_path_.  Returns false if an error occurred.
@@ -88,11 +84,10 @@ class CommandLineInterface {
 
   // Given a set of input params, parse each one and add it to the SourceTree.
   // For each file, we return a list of the virtual path to it.
-  bool ProcessInputPaths(
-      std::vector<std::string> input_params,
-      CustomSourceTree* source_tree,
-      DescriptorDatabase* fallback_database,
-      std::vector<std::string>* virtual_files);
+  bool ProcessInputPaths(std::vector<std::string> input_params,
+                         CustomSourceTree* source_tree,
+                         DescriptorDatabase* fallback_database,
+                         std::vector<std::string>* virtual_files);
 
   // Return status for ParseArguments() and InterpretArgument().
   enum ParseArgumentStatus {
@@ -130,21 +125,17 @@ class CommandLineInterface {
   void PrintHelpText();
 
   // Loads proto_path_ into the provided source_tree.
-  bool InitializeCustomSourceTree(
-      std::vector<std::string> input_params,
-      CustomSourceTree* source_tree,
-      DescriptorDatabase* fallback_database);
+  bool InitializeCustomSourceTree(std::vector<std::string> input_params,
+                                  CustomSourceTree* source_tree,
+                                  DescriptorDatabase* fallback_database);
 
   // Verify that all the input files exist in the given database.
   bool VerifyInputFilesInDescriptors(DescriptorDatabase* fallback_database);
 
   // Parses input_files_ into parsed_files
-  bool ParseInputFiles(
-      std::vector<std::string> input_files,
-      DescriptorPool* descriptor_pool,
-      //CustomSourceTree* source_tree,
-      std::vector<const FileDescriptor*>* parsed_files);
-
+  bool ParseInputFiles(std::vector<std::string> input_files,
+                       DescriptorPool* descriptor_pool,
+                       std::vector<const FileDescriptor*>* parsed_files);
 
   // -----------------------------------------------------------------
 

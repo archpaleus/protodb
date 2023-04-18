@@ -57,7 +57,7 @@ namespace protodb {
 
 using ::google::protobuf::compiler::SourceTree;
 
-// Represents an input file.  
+// Represents an input file.
 // All files will have a virtual path; some files may have a disk path.
 struct InputPathFile {
   const std::string disk_path;
@@ -91,15 +91,11 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
   CustomSourceTree& operator=(const CustomSourceTree&) = delete;
   ~CustomSourceTree() override;
 
-  void AddInput(const InputPathFile& file) {
-    input_files_.push_back(file);
-  }
+  void AddInput(const InputPathFile& file) { input_files_.push_back(file); }
   void AddInputRoot(const InputPathRoot& root) {
     ABSL_LOG(INFO) << "AddInputRoot " << root.ToString();
     input_roots_.push_back(root);
   }
-
-  //void AddMappedPath(absl::string_view virtual_path, absl::string_view disk_path);
 
   // Map a path on disk to a location in the SourceTree.  The path may be
   // either a file or a directory.  If it is a directory, the entire tree
@@ -166,7 +162,7 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
   std::vector<InputPathRoot> input_roots_;
 
   std::vector<InputPathFile> input_files_;
-  
+
   struct Mapping {
     std::string virtual_path;
     std::string disk_path;

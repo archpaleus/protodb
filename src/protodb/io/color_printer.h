@@ -20,8 +20,8 @@ struct ColorPrinter : public Printer {
   virtual ~ColorPrinter() {}
 };
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
-#endif // PROTODB_IO_COLOR_PRINTER_H__
+#endif  // PROTODB_IO_COLOR_PRINTER_H__

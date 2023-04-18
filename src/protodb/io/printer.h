@@ -21,16 +21,14 @@ struct Printer {
   virtual void Emit(std::string_view str) {}
 
   // Emits text followed by a new line.
-  virtual void EmitLine(std::string_view str)  {}
+  virtual void EmitLine(std::string_view str) {}
 
-  void indent() {
-     ++indent_; 
-  };
-  void outdent() { 
+  void indent() { ++indent_; };
+  void outdent() {
     --indent_;
     assert(indent_ >= 0);
   }
-  std::string indent_spacing(const std::string_view spacer = "  ") { 
+  std::string indent_spacing(const std::string_view spacer = "  ") {
     std::string spacing;
     for (int i = 0; i < indent_; ++i) spacing += spacer;
     return spacing;
@@ -40,17 +38,18 @@ struct Printer {
   struct Indent {
     Indent(Printer& printer) : p_(printer) { p_.indent(); }
     ~Indent() { p_.outdent(); }
+
    protected:
     Printer& p_;
   };
   Indent WithIndent() { return Indent(*this); }
 
-protected:
-  int indent_ = 0;  
+ protected:
+  int indent_ = 0;
 };
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
-#endif // PROTODB_IO_PRINTER_H__
+#endif  // PROTODB_IO_PRINTER_H__

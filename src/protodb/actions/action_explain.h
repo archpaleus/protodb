@@ -10,11 +10,10 @@ namespace protodb {
 
 class ProtoDb;
 
-bool Explain(const ProtoDb& protodb,
-             const std::span<std::string>& params);
-    
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+bool Explain(const ProtoDb& protodb, const std::span<std::string>& params);
+
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
 #endif  // PROTODB_ACTION_EXPLAIN_H__

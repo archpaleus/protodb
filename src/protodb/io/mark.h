@@ -39,8 +39,8 @@ struct Mark {
   std::optional<uint32_t> maybe_marker_end_;
 };
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
 
-#endif // PROTODB_IO_PRINTER_H__
+#endif  // PROTODB_IO_PRINTER_H__
