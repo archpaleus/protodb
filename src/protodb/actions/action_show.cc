@@ -61,7 +61,7 @@ namespace protodb {
 
 struct ShowOptions {
   bool files = false;
-  bool packages = false;
+  bool packages = false; // not supported
   bool messages = false;
   bool enums = false;
   bool enum_values = false;
@@ -84,7 +84,11 @@ struct ShowVisitor {
   }
 
   void operator()(const FieldDescriptor* descriptor) {
-    printer.Emit(absl::StrCat("field: ", descriptor->name(), "\n"));
+    if (descriptor->is_extension()) {
+      printer.Emit(absl::StrCat("extension: [", descriptor->full_name(), "]\n"));
+    } else {
+      printer.Emit(absl::StrCat("field: ", descriptor->name(), "\n"));
+    }
   }
 
   void operator()(const EnumDescriptor* descriptor) {  
@@ -108,53 +112,6 @@ struct ShowVisitor {
 
 };
 
-void ShowFile(DescriptorDatabase* db, const ShowOptions& show_options, const FileDescriptorProto* descriptor, io::Printer* printer) {
-   if (descriptor) {
-    //printer->Emit(descriptor->package());
-    //const std::string& full_name = (package.empty() ? "" : package + ".") + descriptor->name();
-    printer->Emit(descriptor->name());
-    printer->Emit("\n");
-   }
-}
-
-void ShowPackage(DescriptorDatabase* db, const ShowOptions& show_options, const FileDescriptorProto* descriptor, io::Printer* printer) {
-   if (descriptor) {
-    printer->Emit(descriptor->package());
-    printer->Emit("\n");
-    auto indent = printer->WithIndent();
-   }
-}
-
-void ShowMessage(DescriptorDatabase* db, const ShowOptions& show_options, const std::string& package, const DescriptorProto* descriptor, io::Printer* printer) {
-  if (!descriptor) return;
-  const std::string& full_name = (package.empty() ? "" : package + ".") + descriptor->name();
-  printer->Emit(full_name);
-  printer->Emit("\n");
-  auto indent = printer->WithIndent();
-  if (show_options.enums) {
-    for (int i = 0; i < descriptor->enum_type_size(); i++) {
-      const EnumDescriptorProto& enum_descriptor = descriptor->enum_type(i);
-      printer->Emit(absl::StrCat("enum ", enum_descriptor.name(), "\n"));
-      auto indent = printer->WithIndent();
-      for (const auto& value : enum_descriptor.value()) {
-        printer->Emit(absl::StrCat(value.name(), " = ", value.number(), "\n"));
-      }
-    }
-  }
-  if (show_options.fields) {
-    for (int i = 0; i < descriptor->field_size(); i++) {
-      const FieldDescriptorProto& field_descriptor = descriptor->field(i);
-        printer->Emit(absl::StrCat(field_descriptor.type_name(), " ", field_descriptor.name(), " = ", field_descriptor.number(), "\n"));
-    }
-  }
-}
-
-void ShowMessage(DescriptorDatabase* db, const ShowOptions& show_options, const Descriptor* descriptor, io::Printer* printer) {
-  if (!descriptor) return;
-  DescriptorProto descriptor_proto;
-  descriptor->CopyTo(&descriptor_proto);
-  ShowMessage(db, show_options, descriptor->file()->package(), &descriptor_proto, printer);
-}
 
 bool Show(const protodb::ProtoDb& protodb,
           const std::span<std::string>& params) {
@@ -185,9 +142,12 @@ bool Show(const protodb::ProtoDb& protodb,
         show_options.services = true;
       } else if (prop == "method" || prop == "methods") {
         show_options.methods = true;
+      } else if (prop == "extension" || prop == "extensions") {
+        show_options.extensions = true;
       } else if (prop == "all") {
-        show_options.files = show_options.packages = show_options.messages = show_options.fields
-         = show_options.enums = show_options.services = show_options.methods = true;
+        show_options.files = show_options.packages = show_options.messages =
+            show_options.fields = show_options.enums = show_options.services =
+            show_options.methods = show_options.extensions = true;
       } else {
         std::cerr << "show: unknown property: " << prop << std::endl;
         return false;

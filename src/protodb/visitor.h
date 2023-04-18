@@ -26,17 +26,19 @@ struct WalkOptions {
   bool fields = false;
   bool services = false;
   bool methods = false;
+  bool extensions = false;
 
   static constexpr auto All() {
     return WalkOptions{
       .files = true,
       .packages = true,
       .messages = true,
-      .fields = true,
       .enums = true,
       .enum_values = true,
+      .fields = true,
       .services = true,
       .methods = true,
+      .extensions = true,
     };
   }
 };
@@ -50,8 +52,14 @@ struct DescriptorVisitor {
   auto indent() { return visit_fn.WithIndent(); }
 
   void Walk(const FieldDescriptor* descriptor) { 
-    if (options.fields) {
-      visit_fn(descriptor); 
+    if (descriptor->is_extension()) {
+      if (options.extensions) {
+        visit_fn(descriptor); 
+      }
+    } else {
+      if (options.fields) {
+        visit_fn(descriptor); 
+      }
     }
   }
 
