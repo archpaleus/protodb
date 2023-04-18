@@ -1,7 +1,5 @@
 #include "protodb/actions/action_show.h"
 
-#include "google/protobuf/stubs/platform_macros.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -21,13 +19,13 @@
 #include <utility>
 #include <vector>
 
+#include "google/protobuf/stubs/platform_macros.h"
+
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #elif defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
-
-#include "google/protobuf/stubs/common.h"
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
@@ -46,6 +44,7 @@
 #include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/db/protodb.h"
@@ -54,14 +53,13 @@
 // Must be included last.
 #include "google/protobuf/port_def.inc"
 
-
 namespace google {
 namespace protobuf {
 namespace protodb {
 
 struct ShowOptions {
   bool files = false;
-  bool packages = false; // not supported
+  bool packages = false;  // not supported
   bool messages = false;
   bool enums = false;
   bool enum_values = false;
@@ -85,33 +83,32 @@ struct ShowVisitor {
 
   void operator()(const FieldDescriptor* descriptor) {
     if (descriptor->is_extension()) {
-      printer.Emit(absl::StrCat("extension: [", descriptor->full_name(), "]\n"));
+      printer.Emit(
+          absl::StrCat("extension: [", descriptor->full_name(), "]\n"));
     } else {
       printer.Emit(absl::StrCat("field: ", descriptor->name(), "\n"));
     }
   }
 
-  void operator()(const EnumDescriptor* descriptor) {  
+  void operator()(const EnumDescriptor* descriptor) {
     printer.Emit(absl::StrCat("enum: ", descriptor->name(), "\n"));
   }
 
-  void operator()(const EnumValueDescriptor* descriptor) {  
+  void operator()(const EnumValueDescriptor* descriptor) {
     printer.Emit(descriptor->name());
     printer.Emit("\n");
   }
 
-  void operator()(const ServiceDescriptor* descriptor) {  
+  void operator()(const ServiceDescriptor* descriptor) {
     printer.Emit(descriptor->name());
     printer.Emit("\n");
   }
 
-  void operator()(const MethodDescriptor* descriptor) {  
-      printer.Emit(descriptor->name());
-      printer.Emit("\n");
+  void operator()(const MethodDescriptor* descriptor) {
+    printer.Emit(descriptor->name());
+    printer.Emit("\n");
   }
-
 };
-
 
 bool Show(const protodb::ProtoDb& protodb,
           const std::span<std::string>& params) {
@@ -147,7 +144,7 @@ bool Show(const protodb::ProtoDb& protodb,
       } else if (prop == "all") {
         show_options.files = show_options.packages = show_options.messages =
             show_options.fields = show_options.enums = show_options.services =
-            show_options.methods = show_options.extensions = true;
+                show_options.methods = show_options.extensions = true;
       } else {
         std::cerr << "show: unknown property: " << prop << std::endl;
         return false;
@@ -158,10 +155,10 @@ bool Show(const protodb::ProtoDb& protodb,
   io::FileOutputStream out(STDOUT_FILENO);
   io::Printer printer(&out, '$');
   std::vector<std::string> file_names;
-  db->FindAllFileNames(&file_names); 
+  db->FindAllFileNames(&file_names);
   for (const auto& file : file_names) {
     const auto* file_descriptor = descriptor_pool->FindFileByName(file);
-    auto visitor = ShowVisitor{.printer=printer};
+    auto visitor = ShowVisitor{.printer = printer};
     WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
     WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
   }
@@ -169,6 +166,6 @@ bool Show(const protodb::ProtoDb& protodb,
   return true;
 }
 
-} // namespace
-} // namespace
-} // namespace
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google

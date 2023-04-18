@@ -1,7 +1,5 @@
 #include "protodb/db/protodb.h"
 
-#include "google/protobuf/stubs/platform_macros.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -16,18 +14,16 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
-#include <span>
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #elif defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #endif
-
-#include "google/protobuf/stubs/common.h"
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
@@ -38,14 +34,15 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
-#include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/io/coded_stream.h"
 #include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 
@@ -110,41 +107,42 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
 }  // anonymous namespace
 
 bool ProtoDb::LoadDatabase(const std::string& _path) {
-    protodb_path_ = std::filesystem::path{_path};
-    if (std::filesystem::exists(protodb_path_)) {
-       if (!std::filesystem::is_directory(protodb_path_)) {
-          std::cerr << "path to protodb is not a directory: " << _path << std::endl; 
-       } else {
-          for (const auto& dir_entry : std::filesystem::directory_iterator(protodb_path_)) {
-             const std::string filename = dir_entry.path().filename();
-             if (filename.find(".") == 0) {
-                // Skip any files that start with period.
-                continue;
-             }
-             std::unique_ptr<SimpleDescriptorDatabase> database_for_descriptor_set =
-                   PopulateSingleSimpleDescriptorDatabase(dir_entry.path());
-             if (!database_for_descriptor_set) {
-                std::cout << "error reading " << filename << std::endl;
-                return false;
-             }
-             databases_per_descriptor_set_.push_back(
-                   std::move(database_for_descriptor_set));
-          }
-       }
+  protodb_path_ = std::filesystem::path{_path};
+  if (std::filesystem::exists(protodb_path_)) {
+    if (!std::filesystem::is_directory(protodb_path_)) {
+      std::cerr << "path to protodb is not a directory: " << _path << std::endl;
+    } else {
+      for (const auto& dir_entry :
+           std::filesystem::directory_iterator(protodb_path_)) {
+        const std::string filename = dir_entry.path().filename();
+        if (filename.find(".") == 0) {
+          // Skip any files that start with period.
+          continue;
+        }
+        std::unique_ptr<SimpleDescriptorDatabase> database_for_descriptor_set =
+            PopulateSingleSimpleDescriptorDatabase(dir_entry.path());
+        if (!database_for_descriptor_set) {
+          std::cout << "error reading " << filename << std::endl;
+          return false;
+        }
+        databases_per_descriptor_set_.push_back(
+            std::move(database_for_descriptor_set));
+      }
     }
-
-    std::vector<DescriptorDatabase*> raw_databases_per_descriptor_set;
-    raw_databases_per_descriptor_set.reserve(
-        databases_per_descriptor_set_.size());
-    for (const std::unique_ptr<SimpleDescriptorDatabase>& db :
-         databases_per_descriptor_set_) {
-      raw_databases_per_descriptor_set.push_back(db.get());
-    }
-    merged_database_.reset(
-        new MergedDescriptorDatabase(raw_databases_per_descriptor_set));
-   
-    return true;
   }
+
+  std::vector<DescriptorDatabase*> raw_databases_per_descriptor_set;
+  raw_databases_per_descriptor_set.reserve(
+      databases_per_descriptor_set_.size());
+  for (const std::unique_ptr<SimpleDescriptorDatabase>& db :
+       databases_per_descriptor_set_) {
+    raw_databases_per_descriptor_set.push_back(db.get());
+  }
+  merged_database_.reset(
+      new MergedDescriptorDatabase(raw_databases_per_descriptor_set));
+
+  return true;
+}
 
 }  // namespace protodb
 }  // namespace protobuf

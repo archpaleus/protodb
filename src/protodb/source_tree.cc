@@ -1,10 +1,10 @@
 #include "protodb/source_tree.h"
 
-#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <memory>
@@ -39,7 +39,6 @@ static bool FileExists(std::string_view path) {
   }
   return true;
 }
-
 
 // Given a path, returns an equivalent path with these changes:
 // - On Windows, any backslashes are replaced with forward slashes.
@@ -100,7 +99,8 @@ static inline bool ContainsParentReference(absl::string_view path) {
 static bool ApplyMapping(absl::string_view filename,
                          absl::string_view old_prefix,
                          absl::string_view new_prefix, std::string* result) {
-  ABSL_LOG(INFO) << __FUNCTION__ << " " << filename << " " << old_prefix << " " << new_prefix;
+  ABSL_LOG(INFO) << __FUNCTION__ << " " << filename << " " << old_prefix << " "
+                 << new_prefix;
   if (old_prefix.empty()) {
     // old_prefix matches any relative path.
     if (ContainsParentReference(filename)) {
@@ -157,7 +157,7 @@ CustomSourceTree::CustomSourceTree() {}
 CustomSourceTree::~CustomSourceTree() {}
 
 void CustomSourceTree::MapPath(absl::string_view virtual_path,
-                             absl::string_view disk_path) {
+                               absl::string_view disk_path) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_path << " -> " << disk_path;
 
   mappings_.push_back(
@@ -166,8 +166,8 @@ void CustomSourceTree::MapPath(absl::string_view virtual_path,
 
 CustomSourceTree::DiskFileToVirtualFileResult
 CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
-                                      std::string* virtual_file,
-                                      std::string* shadowing_disk_file) {
+                                        std::string* virtual_file,
+                                        std::string* shadowing_disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << disk_file;
 
   const std::string canonical_disk_file = CanonicalizePath(disk_file);
@@ -200,7 +200,7 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
 }
 
 bool CustomSourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
-                                           std::string* disk_file) {
+                                             std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__;
 
   std::unique_ptr<io::ZeroCopyInputStream> stream(
@@ -244,7 +244,8 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
 
   for (const auto& input_root : input_roots_) {
     // check on disk
-    std::string tmp_disk_path = absl::StrCat(input_root.disk_path, "/", virtual_file);
+    std::string tmp_disk_path =
+        absl::StrCat(input_root.disk_path, "/", virtual_file);
     if (FileExists(tmp_disk_path)) {
       *disk_file = tmp_disk_path;
       io::ZeroCopyInputStream* stream = OpenDiskFile(*disk_file);
@@ -252,7 +253,7 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
     }
   }
 
-  #if 0
+#if 0
   for (const auto& mapping : mappings_) {
     std::string temp_disk_file;
     if (ApplyMapping(virtual_file, mapping.virtual_path, mapping.disk_path,
@@ -275,7 +276,7 @@ io::ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
       }
     }
   }
-  #endif
+#endif
 
   ABSL_LOG(WARNING) << "Virtual file not found: " << virtual_file;
   last_error_message_ = "File not found.";

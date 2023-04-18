@@ -21,7 +21,6 @@
 #include <sys/sysctl.h>
 #endif
 
-
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
@@ -41,10 +40,9 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
+#include "protodb/comparing_visitor.h"
 #include "protodb/db/protodb.h"
 #include "protodb/visitor.h"
-#include "protodb/comparing_visitor.h"
-
 
 namespace google {
 namespace protobuf {
@@ -54,7 +52,7 @@ struct BreakingChangeVisitor {
   io::Printer& printer;
 
   auto WithIndent() { return printer.WithIndent(); }
-  void operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) { 
+  void operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+file ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -73,7 +71,7 @@ struct BreakingChangeVisitor {
       printer.Emit(absl::StrCat(" message ", lhs->name(), "\n"));
     }
   }
-  void operator()(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {  
+  void operator()(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+enum ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -82,7 +80,8 @@ struct BreakingChangeVisitor {
       printer.Emit(absl::StrCat(" enum ", lhs->name(), "\n"));
     }
   }
-  void operator()(const EnumValueDescriptor* lhs, const EnumValueDescriptor* rhs) { 
+  void operator()(const EnumValueDescriptor* lhs,
+                  const EnumValueDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+ ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -91,7 +90,7 @@ struct BreakingChangeVisitor {
       printer.Emit(absl::StrCat("  ", lhs->name(), "\n"));
     }
   }
-  void operator()(const FieldDescriptor* lhs, const FieldDescriptor* rhs) { 
+  void operator()(const FieldDescriptor* lhs, const FieldDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+field ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -100,7 +99,7 @@ struct BreakingChangeVisitor {
       printer.Emit(absl::StrCat(" field ", lhs->name(), "\n"));
     }
   }
-  void operator()(const ServiceDescriptor* lhs, const ServiceDescriptor* rhs) {  
+  void operator()(const ServiceDescriptor* lhs, const ServiceDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+service ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -109,7 +108,7 @@ struct BreakingChangeVisitor {
       printer.Emit(absl::StrCat(" service ", lhs->name(), "\n"));
     }
   }
-  void operator()(const MethodDescriptor* lhs, const MethodDescriptor* rhs) {  
+  void operator()(const MethodDescriptor* lhs, const MethodDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+method ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -133,20 +132,22 @@ bool Update(const protodb::ProtoDb& protodb,
 
   std::vector<const FileDescriptor*> protodb_files;
   std::vector<std::string> protodb_file_names;
-  db->FindAllFileNames(&protodb_file_names); 
+  db->FindAllFileNames(&protodb_file_names);
   for (const auto& file : protodb_file_names) {
-    const FileDescriptor* file_descriptor = descriptor_pool->FindFileByName(file);
+    const FileDescriptor* file_descriptor =
+        descriptor_pool->FindFileByName(file);
     ABSL_CHECK(file_descriptor);
     protodb_files.push_back(file_descriptor);
   }
 
-  auto visitor = BreakingChangeVisitor{.printer=printer};
+  auto visitor = BreakingChangeVisitor{.printer = printer};
   CompareOptions walk_options = CompareOptions::All();
-  CompareDescriptors<BreakingChangeVisitor>(walk_options, protodb_files, parsed_files, visitor);
+  CompareDescriptors<BreakingChangeVisitor>(walk_options, protodb_files,
+                                            parsed_files, visitor);
 
   return true;
 }
 
-} // namespace
-} // namespace
-} // namespace
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google

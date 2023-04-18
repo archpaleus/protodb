@@ -11,20 +11,20 @@
 #include "absl/strings/cord.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/wire_format_lite.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/wire_format_lite.h"
 #include "protodb/io/scan_context.h"
 
 namespace google {
 namespace protobuf {
 namespace protodb {
 
-Mark::Mark(const ScanContext& context) 
-    : context_(context), marker_start_(context_.cis.CurrentPosition()) {
-}
+Mark::Mark(const ScanContext& context)
+    : context_(context), marker_start_(context_.cis.CurrentPosition()) {}
 
 void Mark::stop() {
-  if (maybe_marker_end_) ABSL_CHECK_EQ(*maybe_marker_end_, context_.cis.CurrentPosition());
+  if (maybe_marker_end_)
+    ABSL_CHECK_EQ(*maybe_marker_end_, context_.cis.CurrentPosition());
   maybe_marker_end_ = context_.cis.CurrentPosition();
 }
 
@@ -38,12 +38,12 @@ uint32_t Mark::distance() {
 
 Segment Mark::segment() {
   return {
-    .start=marker_start_,
-    .length=distance(),
-    .snippet=context_.cord->Subcord(marker_start_, distance()),
+      .start = marker_start_,
+      .length = distance(),
+      .snippet = context_.cord->Subcord(marker_start_, distance()),
   };
 }
 
-}  // namespace
-}  // namespace
-}  // namespace
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google

@@ -1,7 +1,5 @@
 #include "protodb/command_line_parse.h"
 
-#include "google/protobuf/stubs/platform_macros.h"
-
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -16,10 +14,12 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
-#include <span>
+
+#include "google/protobuf/stubs/platform_macros.h"
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
@@ -46,15 +46,15 @@
 #include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
-
 #include "protodb/actions/action_explain.h"
 #include "protodb/actions/action_guess.h"
 #include "protodb/actions/action_show.h"
 #include "protodb/actions/action_update.h"
-#include "protodb/error_printer.h"
 #include "protodb/db/protodb.h"
+#include "protodb/error_printer.h"
 #include "protodb/source_tree.h"
 
 // Must be included last.
@@ -76,9 +76,7 @@ using namespace google::protobuf::compiler;
 
 namespace {
 
-void DebugLog(std::string_view msg) {
-  std::cerr << msg << std::endl;
-}
+void DebugLog(std::string_view msg) { std::cerr << msg << std::endl; }
 
 // Get the absolute path of this protoc binary.
 bool GetProtocAbsolutePath(std::string* path) {
@@ -141,7 +139,6 @@ void AddDefaultProtoPaths(CustomSourceTree* source_tree) {
 
   // Check the binary's directory.
   if (IsInstalledProtoPath(path)) {
-    //paths->emplace_back("", path);
     source_tree->AddInputRoot({.disk_path = std::string(path)});
     return;
   }
@@ -149,7 +146,6 @@ void AddDefaultProtoPaths(CustomSourceTree* source_tree) {
   // Check if there is an include subdirectory.
   std::string include_path = absl::StrCat(path, "/include");
   if (IsInstalledProtoPath(include_path)) {
-    //paths->emplace_back("", std::move(include_path));
     source_tree->AddInputRoot({.disk_path = include_path});
     return;
   }
@@ -163,14 +159,12 @@ void AddDefaultProtoPaths(CustomSourceTree* source_tree) {
   path = path.substr(0, pos);
   include_path = absl::StrCat(path, "/include");
   if (IsInstalledProtoPath(include_path)) {
-    //paths->emplace_back("", std::move(include_path));
     source_tree->AddInputRoot({.disk_path = include_path});
     return;
   }
 }
 
 }  // namespace
-
 
 // ===================================================================
 
@@ -198,8 +192,9 @@ int CommandLineInterface::Run(int argc, const char* const argv[]) {
 
 bool CommandLineInterface::InitializeCustomSourceTree(
     std::vector<std::string> input_params,
-    CustomSourceTree* source_tree, DescriptorDatabase* fallback_database) {
-  std::vector<std::pair<std::string, std::string>> proto_path_; 
+    CustomSourceTree* source_tree,
+    DescriptorDatabase* fallback_database) {
+  std::vector<std::pair<std::string, std::string>> proto_path_;
 
   return true;
 }
@@ -248,7 +243,6 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
 
 }  // namespace
 
-
 bool CommandLineInterface::ParseInputFiles(
     std::vector<std::string> input_files,
     DescriptorPool* descriptor_pool,
@@ -263,21 +257,20 @@ bool CommandLineInterface::ParseInputFiles(
     const FileDescriptor* parsed_file =
         descriptor_pool->FindFileByName(input_file);
     if (parsed_file == nullptr) {
-      ABSL_LOG(WARNING) << __FUNCTION__ << ": unable to load file descriptor for " << input_file << std::endl;
+      ABSL_LOG(WARNING) << __FUNCTION__
+                        << ": unable to load file descriptor for " << input_file
+                        << std::endl;
       result = false;
       break;
     }
     parsed_files->push_back(parsed_file);
   }
   descriptor_pool->ClearUnusedImportTrackFiles();
-  
+
   return result;
 }
 
-std::string FindProtoDbLocation() {
-  return "./.protodb/";
-}
-
+std::string FindProtoDbLocation() { return "./.protodb/"; }
 
 bool CommandLineInterface::FindVirtualFileInProtoPath(
     CustomSourceTree* source_tree, std::string virtual_file,
@@ -294,20 +287,19 @@ bool CommandLineInterface::FindVirtualFileInProtoPath(
 bool CommandLineInterface::MakeProtoProtoPathRelative(
     CustomSourceTree* source_tree, std::string* proto,
     DescriptorDatabase* fallback_database) {
-
   // If it's in the fallback db, don't report non-existent file errors.
   FileDescriptorProto fallback_file;
   bool in_fallback_database =
-      proto->find("//") == 0 && 
-      fallback_database != nullptr &&
+      proto->find("//") == 0 && fallback_database != nullptr &&
       fallback_database->FindFileByName(proto->substr(2), &fallback_file);
-    
+
   // If the input file path is not a physical file path, it must be a virtual
   // path.
   if (access(proto->c_str(), F_OK) < 0) {
     std::string disk_file;
     if (source_tree->VirtualFileToDiskFile(*proto, &disk_file)) {
-      //ABSL_LOG(INFO) << "found virtual file on disk: " << *proto << " -> " << disk_file;
+      ABSL_LOG(INFO) << "found virtual file on disk: " << *proto << " -> "
+                     << disk_file;
       return true;
     } else if (in_fallback_database) {
       ABSL_LOG(INFO) << "found in fallback database: " << *proto;
@@ -318,7 +310,7 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
       return false;
     }
   } else {
-    DebugLog("ok on disk: "  + *proto);
+    DebugLog("ok on disk: " + *proto);
   }
 
   // For files that are found on disk, check to see if there is a virtual
@@ -327,7 +319,7 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
   switch (source_tree->DiskFileToVirtualFile(*proto, &virtual_file,
                                              &shadowing_disk_file)) {
     case CustomSourceTree::SUCCESS:
-      DebugLog("ource tree SUCCESS - " +  *proto + " -> " + virtual_file);
+      DebugLog("ource tree SUCCESS - " + *proto + " -> " + virtual_file);
       *proto = virtual_file;
       break;
     case CustomSourceTree::SHADOWED:
@@ -339,7 +331,7 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
                 << std::endl;
       return false;
     case CustomSourceTree::CANNOT_OPEN: {
-      DebugLog("source tree CANNOT_OPEN - " +  *proto );
+      DebugLog("source tree CANNOT_OPEN - " + *proto);
       if (in_fallback_database) {
         return true;
       }
@@ -351,15 +343,15 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
       return false;
     }
     case CustomSourceTree::NO_MAPPING: {
-      DebugLog("source tree NO_MAPPING - " +  *proto );
+      DebugLog("source tree NO_MAPPING - " + *proto);
       // Try to interpret the path as a virtual path.
       std::string disk_file;
       if (source_tree->VirtualFileToDiskFile(*proto, &disk_file) ||
           in_fallback_database) {
         return true;
       } else {
-        DebugLog("source tree unknown - " +  *proto );
-        
+        DebugLog("source tree unknown - " + *proto);
+
         // The input file path can't be mapped to any --proto_path and it also
         // can't be interpreted as a virtual path.
         std::cerr
@@ -381,19 +373,17 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
 }
 
 void CopyFileDescriptor(
-    const FileDescriptor* file,
-    bool copy_dependencies,
+    const FileDescriptor* file, bool copy_dependencies,
     absl::flat_hash_set<const FileDescriptor*>* already_seen,
     RepeatedPtrField<FileDescriptorProto>* output) {
-  //if (absl::ContainsKey(already_seen, file)) {
   if (!already_seen->insert(file).second) {
     return;
   }
 
   if (copy_dependencies) {
     for (int i = 0; i < file->dependency_count(); i++) {
-      CopyFileDescriptor(
-          file->dependency(i), copy_dependencies, already_seen, output);
+      CopyFileDescriptor(file->dependency(i), copy_dependencies, already_seen,
+                         output);
     }
   }
   FileDescriptorProto* new_descriptor = output->Add();
@@ -402,8 +392,7 @@ void CopyFileDescriptor(
 }
 
 static bool WriteFilesToDescriptorSet(
-    const std::string& output_path,
-    bool include_imports,
+    const std::string& output_path, bool include_imports,
     std::vector<const FileDescriptor*> parsed_files) {
   FileDescriptorSet file_set;
 
@@ -427,14 +416,14 @@ static bool WriteFilesToDescriptorSet(
     }
   }
   for (int i = 0; i < parsed_files.size(); i++) {
-    CopyFileDescriptor(parsed_files[i], include_imports,
-                       &already_seen, file_set.mutable_file());
+    CopyFileDescriptor(parsed_files[i], include_imports, &already_seen,
+                       file_set.mutable_file());
   }
 
   int fd;
   do {
-    fd = open(output_path.c_str(),
-              O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+    fd = open(output_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
+              0666);
   } while (fd < 0 && errno == EINTR);
 
   if (fd < 0) {
@@ -454,11 +443,9 @@ static bool WriteFilesToDescriptorSet(
   }
 
   if (!out.Close()) {
-    std::cerr << output_path << ": " << strerror(out.GetErrno())
-              << std::endl;
+    std::cerr << output_path << ": " << strerror(out.GetErrno()) << std::endl;
     return false;
   }
-
 
   return true;
 }
@@ -488,8 +475,7 @@ static bool FileExists(std::string_view path) {
 }
 
 bool CommandLineInterface::ProcessInputPaths(
-    std::vector<std::string> input_params,
-    CustomSourceTree* source_tree,
+    std::vector<std::string> input_params, CustomSourceTree* source_tree,
     DescriptorDatabase* fallback_database,
     std::vector<std::string>* virtual_files) {
   std::vector<InputPathFile> input_files;
@@ -498,35 +484,42 @@ bool CommandLineInterface::ProcessInputPaths(
 
   for (auto& input_param : input_params) {
     if (input_param.find("//") != std::string::npos) {
-      std::vector<std::string_view> path_parts = absl::StrSplit(input_param, "//");
+      std::vector<std::string_view> path_parts =
+          absl::StrSplit(input_param, "//");
       if (path_parts.size() > 2) {
-        ABSL_LOG(FATAL) << "Can't handle input paths with more than one virtual path separator: " << input_param;
+        ABSL_LOG(FATAL) << "Can't handle input paths with more than one "
+                           "virtual path separator: "
+                        << input_param;
       }
-      
+
       if (path_parts[0].empty()) {
         // This is a virtual path
-        input_files.push_back({.virtual_path = std::string(path_parts[1]), .input_path = input_param});
+        input_files.push_back({.virtual_path = std::string(path_parts[1]),
+                               .input_path = input_param});
       } else if (path_parts[1].empty()) {
         // This is a proto path on disk that virtual paths may reference.
         // Make sure that it exist on disk first.
         if (!FileIsReadable(input_param)) {
-          std::cerr << "error: Unable to find import path: " << input_param << std::endl; 
-          exit(1); // TODO: update error logging
+          std::cerr << "error: Unable to find import path: " << input_param
+                    << std::endl;
+          exit(1);  // TODO: update error logging
         }
         input_roots.push_back({.disk_path = std::string(path_parts[0])});
       } else {
         // This is an on disk path with a virtual path separator.
         // 1. Make sure the entire disk path exists
         if (!FileExists(input_param)) {
-          std::cerr << "error: Unable to find: " << input_param << std::endl; 
-          exit(1); // TODO
+          std::cerr << "error: Unable to find: " << input_param << std::endl;
+          exit(1);  // TODO
         }
 
-        const std::string disk_path = absl::StrCat(path_parts[0], "/", path_parts[1]);
+        const std::string disk_path =
+            absl::StrCat(path_parts[0], "/", path_parts[1]);
         const std::string virtual_path = std::string(path_parts[1]);
-        ABSL_LOG(INFO) << absl::StrCat("add mapped disk file ", input_param, " -> ", virtual_path);
-        
-        #if 0
+        ABSL_LOG(INFO) << absl::StrCat("add mapped disk file ", input_param,
+                                       " -> ", virtual_path);
+
+#if 0
         // 2. Check if the virtual path already exists in the source tree
         //    and shadows an existing file.
         if (absl::c_find(cleaned_input_params, virtual_path) != cleaned_input_params.end()) {
@@ -535,7 +528,7 @@ bool CommandLineInterface::ProcessInputPaths(
           //exit(1); // TODO
         }
         cleaned_input_params.push_back(virtual_path);
-        #endif
+#endif
 
         input_files.push_back({.virtual_path = virtual_path,
                                .disk_path = disk_path,
@@ -545,7 +538,6 @@ bool CommandLineInterface::ProcessInputPaths(
       ABSL_LOG(INFO) << "old style input: " << input_param;
       ambigous_input_files.push_back(input_param);
     }
-
   }
 
   // We need to add all virtual path roots before we add the ambiguous
@@ -563,27 +555,28 @@ bool CommandLineInterface::ProcessInputPaths(
     if (FileExists(input_file)) {
       std::string virtual_file;
       std::string shadowing_disk_file;
-      switch (source_tree->DiskFileToVirtualFile(
-          input_file, &virtual_file, &shadowing_disk_file)) {
+      switch (source_tree->DiskFileToVirtualFile(input_file, &virtual_file,
+                                                 &shadowing_disk_file)) {
         case CustomSourceTree::SUCCESS:
           input_files.push_back({.virtual_path = virtual_file,
-                                .disk_path = input_file,
-                                .input_path = input_file});
-            break;
-        case CustomSourceTree::CANNOT_OPEN: 
+                                 .disk_path = input_file,
+                                 .input_path = input_file});
+          break;
+        case CustomSourceTree::CANNOT_OPEN:
           ABSL_LOG(FATAL) << "CANNOT_OPEN";
-        case CustomSourceTree::NO_MAPPING: 
+        case CustomSourceTree::NO_MAPPING:
           ABSL_LOG(FATAL) << "NO_MAPPING";
         default:
           ABSL_LOG(WARNING) << "Do something";
       }
-      //cleaned_input_files.push_back(input_file);
-    } else if (FindVirtualFileInProtoPath(source_tree, input_file, &disk_file)) {
-      ABSL_LOG(INFO) << "virtual file found on disk: " << input_file << " at " << disk_file;
+      // cleaned_input_files.push_back(input_file);
+    } else if (FindVirtualFileInProtoPath(source_tree, input_file,
+                                          &disk_file)) {
+      ABSL_LOG(INFO) << "virtual file found on disk: " << input_file << " at "
+                     << disk_file;
       input_files.push_back({.virtual_path = input_file,
-                              .disk_path = disk_file,
-                              .input_path = input_file});
-
+                             .disk_path = disk_file,
+                             .input_path = input_file});
 
     //} else if (FindVirtualFileInDatabase(input_file, fallback_database)) { // TODO
 
@@ -599,12 +592,11 @@ bool CommandLineInterface::ProcessInputPaths(
     }
     source_tree->AddInput(input_file);
   }
-  
+
   ABSL_CHECK_GE(input_params.size(), input_files.size());
 
   return true;
 }
-
 
 bool CommandLineInterface::ExpandArgumentFile(
     const std::string& file, std::vector<std::string>* arguments) {
@@ -618,12 +610,11 @@ bool CommandLineInterface::ExpandArgumentFile(
   std::string argument;
   // We don't support any kind of shell expansion right now.
   while (std::getline(file_stream, argument)) {
-    //ABSL_LOG(INFO) << argument;
+    // ABSL_LOG(INFO) << argument;
     arguments->push_back(argument);
   }
   return true;
 }
-
 
 CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     int argc, const char* const argv[]) {
@@ -645,7 +636,7 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   // if no arguments are given, show help
   if (arguments.empty()) {
     PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;  
+    return PARSE_ARGUMENT_DONE_AND_EXIT;
   }
 
   // Iterate through all arguments and parse them.
@@ -665,7 +656,7 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   protodb->LoadDatabase(protodb_path);
 
   std::unique_ptr<ErrorPrinter> error_collector;
-    
+
   auto custom_source_tree = std::make_unique<CustomSourceTree>();
   error_collector.reset(new ErrorPrinter(custom_source_tree.get()));
 
@@ -680,8 +671,8 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   std::vector<std::string> virtual_input_files;
   if (!ProcessInputPaths(input_params, custom_source_tree.get(),
                          fallback_database, &virtual_input_files)) {
-      ABSL_LOG(FATAL) << " failed to parse input params";
-      return PARSE_ARGUMENT_FAIL;
+    ABSL_LOG(FATAL) << " failed to parse input params";
+    return PARSE_ARGUMENT_FAIL;
   }
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
@@ -693,9 +684,10 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
       source_tree_database->GetValidationErrorCollector());
 
   std::vector<const FileDescriptor*> parsed_files;
-  if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(), &parsed_files)) {
-      ABSL_LOG(FATAL) << " couldn't parse input files";
-      return PARSE_ARGUMENT_FAIL;
+  if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(),
+                       &parsed_files)) {
+    ABSL_LOG(FATAL) << " couldn't parse input files";
+    return PARSE_ARGUMENT_FAIL;
   }
 
   const std::string command = arguments[0];
@@ -708,13 +700,14 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     return PARSE_ARGUMENT_DONE_AND_EXIT;  // Exit without running compiler.
   } else if (command == "help") {
     PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;  
+    return PARSE_ARGUMENT_DONE_AND_EXIT;
   } else if (command == "info") {
     {
       auto db = protodb->database();
       std::vector<std::string> message_names;
       db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in protodb" << std::endl;
+      std::cout << message_names.size() << " message(s) in protodb"
+                << std::endl;
     }
 
     {
@@ -722,16 +715,18 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
       for (const FileDescriptor* fd : parsed_files) {
         messages += fd->message_type_count();
       }
-      std::cout << messages << " top-level message(s) in " << parsed_files.size()
-                << " parsed files (" << virtual_input_files.size() << " input file(s))"
-                << std::endl;
+      std::cout << messages << " top-level message(s) in "
+                << parsed_files.size() << " parsed files ("
+                << virtual_input_files.size() << " input file(s))" << std::endl;
     }
   } else if (command == "add") {
     if (parsed_files.size() > 0) {
       auto micros = absl::GetCurrentTimeNanos() / 1000 / 1000;
-      std::string output_path = absl::StrCat(protodb_path, "/added_", micros, ".pb");
+      std::string output_path =
+          absl::StrCat(protodb_path, "/added_", micros, ".pb");
       WriteFilesToDescriptorSet(output_path, true, parsed_files);
-      std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to " << output_path << std::endl;
+      std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to "
+                << output_path << std::endl;
     } else {
       std::cerr << "No files parsed." << std::endl;
     }
@@ -760,9 +755,8 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   } else {
     std::cerr << "Unexpected command: " << command << std::endl;
     PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;  
+    return PARSE_ARGUMENT_DONE_AND_EXIT;
   }
-
 
   return PARSE_ARGUMENT_DONE_AND_CONTINUE;
 }
@@ -784,10 +778,11 @@ Action:
   std::cout << std::endl;
 }
 
-bool CommandLineInterface::Encode(const ProtoDb& protodb, std::span<std::string> params) {
-  auto descriptor_pool = std::make_unique<DescriptorPool>(
-    protodb.database(), nullptr);
-  
+bool CommandLineInterface::Encode(const ProtoDb& protodb,
+                                  std::span<std::string> params) {
+  auto descriptor_pool =
+      std::make_unique<DescriptorPool>(protodb.database(), nullptr);
+
   if (params.empty()) {
     std::cerr << "encode: no message type specified" << std::endl;
     return false;
@@ -809,9 +804,10 @@ bool CommandLineInterface::Encode(const ProtoDb& protodb, std::span<std::string>
   return true;
 }
 
-bool CommandLineInterface::Decode(const ProtoDb& protodb, std::string codec_type) {
-  auto descriptor_pool = std::make_unique<DescriptorPool>(
-      protodb.database(), nullptr);
+bool CommandLineInterface::Decode(const ProtoDb& protodb,
+                                  std::string codec_type) {
+  auto descriptor_pool =
+      std::make_unique<DescriptorPool>(protodb.database(), nullptr);
 
   const Descriptor* type = descriptor_pool->FindMessageTypeByName(codec_type);
   if (type == nullptr) {
@@ -842,6 +838,6 @@ bool CommandLineInterface::Decode(const ProtoDb& protodb, std::string codec_type
   return true;
 }
 
-}  // namespace google::protobuf::protodb
-}  // namespace google::protobuf::protodb
-}  // namespace google::protobuf::protodb
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google

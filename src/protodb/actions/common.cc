@@ -12,9 +12,8 @@
 #include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/wire_format_lite.h"
 #include "google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "google/protobuf/wire_format_lite.h"
 
 namespace google {
 namespace protobuf {
@@ -33,7 +32,6 @@ bool IsAsciiPrintable(absl::Cord cord) {
 }
 
 bool IsParseableAsMessage(std::string_view str) {
-
   // We need at least one field parsed to validate a message.
   if (str.empty()) return false;
 
@@ -42,10 +40,10 @@ bool IsParseableAsMessage(std::string_view str) {
   io::CodedInputStream cis(&cord_input);
 
   cis.SetTotalBytesLimit(str.length());
-  while(!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
+  while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     uint32_t tag = 0;
     if (!cis.ReadVarint32(&tag)) {
-       return false;
+      return false;
     }
     if (!WireFormatLite::SkipField(&cis, tag)) {
       return false;
@@ -57,6 +55,6 @@ bool IsParseableAsMessage(absl::Cord cord) {
   return IsParseableAsMessage(cord.Flatten());
 }
 
-} // namespace protodb
-} // namespace protobuf
-} // namespace google
+}  // namespace protodb
+}  // namespace protobuf
+}  // namespace google
