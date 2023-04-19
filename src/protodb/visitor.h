@@ -59,6 +59,13 @@ struct DescriptorVisitor {
 
   auto indent() { return visit_fn.WithIndent(); }
 
+  template <typename T>
+  void Walk(std::map<std::string_view, T>& descriptor_map) {
+    for (auto i = descriptor_map.begin(); i != descriptor_map.end(); ++i) {
+      Walk(i->second);
+    }
+  }
+
   void Walk(const FieldDescriptor* descriptor) {
     if (descriptor->is_extension()) {
       if (options.extensions) {
@@ -111,9 +118,19 @@ struct DescriptorVisitor {
       visit_fn(descriptor);
       with_indent.emplace(indent());
     }
+
+    std::map<std::string_view, const EnumDescriptor*> enum_types;
     for (int i = 0; i < descriptor->enum_type_count(); i++) {
-      Walk(descriptor->enum_type(i));
+      enum_types[descriptor->enum_type(i)->full_name()] = descriptor->enum_type(i);
     }
+    Walk(enum_types);
+
+    std::map<std::string_view, const Descriptor*> nested_types;
+    for (int i = 0; i < descriptor->nested_type_count(); i++) {
+      nested_types[descriptor->nested_type(i)->full_name()] = descriptor->nested_type(i);
+    }
+    Walk(nested_types);
+
     for (int i = 0; i < descriptor->nested_type_count(); i++) {
       Walk(descriptor->nested_type(i));
     }
@@ -127,19 +144,28 @@ struct DescriptorVisitor {
 
   void Walk(const FileDescriptor* descriptor) {
     std::optional<decltype(indent())> with_indent;
-    if (options.files) {
+    if (options.files || options.packages) {
       visit_fn(descriptor);
       with_indent.emplace(indent());
     }
+    std::map<std::string_view, const Descriptor*> message_types;
     for (int i = 0; i < descriptor->message_type_count(); i++) {
-      Walk(descriptor->message_type(i));
+      message_types[descriptor->message_type(i)->name()] = descriptor->message_type(i);
     }
+    Walk(message_types);
+
+    std::map<std::string_view, const EnumDescriptor*> enum_types;
     for (int i = 0; i < descriptor->enum_type_count(); i++) {
-      Walk(descriptor->enum_type(i));
+      enum_types[descriptor->enum_type(i)->full_name()] = descriptor->enum_type(i);
     }
+    Walk(enum_types);
+
+    std::map<std::string_view, const FieldDescriptor*> extensions;
     for (int i = 0; i < descriptor->extension_count(); i++) {
-      Walk(descriptor->extension(i));
+      extensions[descriptor->extension(i)->name()] = descriptor->extension(i);
     }
+    Walk(extensions);
+
     for (int i = 0; i < descriptor->service_count(); i++) {
       Walk(descriptor->service(i));
     }
