@@ -5,7 +5,8 @@
 - pbtoolbox - in use, Powerbuilder toolbox
 - pbtools - used on github: old project for python protos
 - pbbuddy - not taken
-- pbscope
+- pbscope - available
+- pbstack - available, but not really a stack
 
 ### proto
 - proto
@@ -14,16 +15,20 @@
 - protoknife
 - prototools - trademark in use by german company
 - prototoolbox - not in use
-- protoscope - used on github: protocolbuffers/protoscope
+- protoscope - taken on github: protocolbuffers/protoscope
 - protodb
-- proto-id
+- proto-id - available, but lots of seo
+- protoid - github uw-labs/protoid, https://www.instagram.com/idproto/
 - protopipe
 - protoscan
 
+
 ### pro
-- prosytle
+- prostyle - taken on npm/github, https://github.com/riskoni/ProStyle, prostyle.io for sale
+- prost - taken on npm/github, popular package
 
 
 ## Distinct Names
-proteus - TAKEN
+proteus - TAKEN on github
 protagonist
+codex - used within google, used by open
