@@ -1,14 +1,3 @@
-# Naming Options
-- pb
-- proto
-- pbtoolbox - in use, Powerbuilder toolbox
-- pbtools - in use, old github project for python protos
-- protoknife
-- prototools - trademark in use by german company
-- prototoolbox - not in use
-  - protoscope
-  - protodb
-  - protoid
 
 Thesis:
 
