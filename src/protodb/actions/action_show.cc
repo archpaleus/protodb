@@ -84,10 +84,19 @@ struct ShowOptions {
 
 struct ShowVisitor {
   Printer& printer;
+  const ShowOptions options;
 
   auto WithIndent() { return printer.WithIndent(); }
   void operator()(const FileDescriptor* descriptor) {
-    printer.Emit(absl::StrCat("file: ", descriptor->name(), "\n"));
+    if (options.files) {
+      printer.Emit(absl::StrCat("file: ", descriptor->name(), "\n"));
+    }
+    if (options.packages) {
+      if (options.files) {
+      printer.Emit(" ");
+      }
+      printer.Emit(absl::StrCat("package: ", descriptor->package(), "\n"));
+    }
   }
 
   void operator()(const Descriptor* descriptor) {
@@ -104,7 +113,19 @@ struct ShowVisitor {
   }
 
   void operator()(const EnumDescriptor* descriptor) {
-    printer.Emit(absl::StrCat("enum: ", descriptor->name(), "\n"));
+    if (options.messages) {
+      if (options.packages) {
+        printer.Emit(absl::StrCat("enum: ", absl::StripPrefix(descriptor->name(), descriptor->file()->package()), "\n"));
+      } else {
+        printer.Emit(absl::StrCat("enum: ", descriptor->name(), "\n"));
+      }
+    } else {
+      if (options.packages) {
+        printer.Emit(absl::StrCat("enum: ", absl::StripPrefix(absl::StripPrefix(descriptor->full_name(), descriptor->file()->package()), "."), "\n"));
+      } else {
+        printer.Emit(absl::StrCat("enum: ", descriptor->full_name(), "\n"));
+      }
+    }
   }
 
   void operator()(const EnumValueDescriptor* descriptor) {
@@ -171,8 +192,8 @@ bool Show(const protodb::ProtoDb& protodb,
   db->FindAllFileNames(&file_names);
   for (const auto& file : file_names) {
     const auto* file_descriptor = descriptor_pool->FindFileByName(file);
-    auto visitor = ShowVisitor{.printer = printer};
-    WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
+    const auto visitor = ShowVisitor{.printer = printer, .options = show_options};
+    const WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
     WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
   }
 
