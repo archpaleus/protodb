@@ -3,7 +3,7 @@ syntax = "proto2";
 package protobunny.schema_id;
 
 // Tracks a unique ID for a message.
-message ProtoId {
+message MessageOptions {
  oneof id {
     // A 64-bit id for this message.
     // The first 255 values are reserved for well-known types.

@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package protobunny.schema_id;
+
+// Hold a message that's identified by a Proto ID in the schema map.
+message Any {
+ oneof id {
+    fixed64 id64 = 2;
+    fixed32 id32 = 3;
+  }
+  bytes message = 4;
+}

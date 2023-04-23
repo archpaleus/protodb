@@ -8,14 +8,14 @@ proto_library(
         "@com_google_protobuf//:descriptor_proto",
     ],
     strip_import_prefix = "",
-    import_prefix = "proto_schema_id",
+    import_prefix = "schema_id",
 )
 
 proto_library(
     name = "message_id_proto",
     srcs = ["message_id.proto"],
     strip_import_prefix = "",
-    import_prefix = "proto_schema_id",
+    import_prefix = "schema_id",
 )
 
 proto_library(
@@ -25,5 +25,5 @@ proto_library(
         ":message_id_proto",
     ],
     strip_import_prefix = "",
-    import_prefix = "proto_schema_id",
+    import_prefix = "schema_id",
 )

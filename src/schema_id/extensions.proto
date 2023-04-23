@@ -1,11 +1,10 @@
 syntax = "proto2";
 
 import "google/protobuf/descriptor.proto";
-import "proto_schema_id/message_id.proto";
-//import "message_id.proto";
+import "schema_id/message_id.proto";
 
 package protobunny.schema_id;
 
 extend google.protobuf.MessageOptions {
-  optional ProtoId id = 510000;
+  optional MessageOptions id = 510000;
 }
