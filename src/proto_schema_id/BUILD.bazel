@@ -1,0 +1,29 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+proto_library(
+    name = "extensions",
+    srcs = ["extensions.proto"],
+    deps = [
+        ":message_id_proto",
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+    strip_import_prefix = "",
+    import_prefix = "proto_schema_id",
+)
+
+proto_library(
+    name = "message_id_proto",
+    srcs = ["message_id.proto"],
+    strip_import_prefix = "",
+    import_prefix = "proto_schema_id",
+)
+
+proto_library(
+    name = "message_id_map_proto",
+    srcs = ["message_id_map.proto"],
+    deps = [
+        ":message_id_proto",
+    ],
+    strip_import_prefix = "",
+    import_prefix = "proto_schema_id",
+)

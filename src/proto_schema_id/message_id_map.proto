@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package protobunny.schema_id;
+
+message MessageIdMap {
+  message Entry {
+    oneof id {
+      fixed32 id32 = 2;
+      fixed64 id64 = 3;
+    }
+
+    // The name of the message type.
+    string message_type = 4;
+  }
+  repeated Entry entries = 2;
+}

@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package protobunny.schema_id;
+
+// Tracks a unique ID for a message.
+message ProtoId {
+ oneof id {
+    // A 64-bit id for this message.
+    // The first 255 values are reserved for well-known types.
+    // The upper 8 bits are reserved and must be 0.
+    // Valid range: 0x100..0xFFFFFFFFFFFFFFFFFF
+    fixed64 id64 = 2;
+
+    // A 32-bit identifier for a message.
+    // The first 255 values are reserved for well-known types.
+    // The upper 4 bits are reserved and must be 0.
+    // Valid range: 0x100..0xFFFFFFF
+    fixed32 id32 = 3;
+  }
+}
