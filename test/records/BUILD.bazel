@@ -1,0 +1,16 @@
+load("@rules_python//python:proto.bzl", "py_proto_library")
+
+py_proto_library(
+  name = "py_records_proto",
+  deps = ["//src/records:records_proto"],
+)
+
+py_test(
+  name = "records_test_py",
+  srcs = ["records_test.py"],
+  deps = [
+    ":py_records_proto",
+    "@com_google_protobuf//:protobuf_python",
+  ],
+  main = "records_test.py",
+)
