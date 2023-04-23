@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-message ProtoMap {
-  oneof id {
-    fixed32 id32 = 2;
-    fixed64 id64 = 3;
-  }
-  string name = 4;
-}
