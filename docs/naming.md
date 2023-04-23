@@ -1,9 +1,11 @@
 # Projects
 
 - protobunny/any
-- protobunny/proto-id
+- protobunny/record
+- protobunny/proto-id-map
 - protobunny/codex
-- protobunny/pbtools-py
+- protobunny/protobunny-tools-python
+- protobunny/protobunny-tools-cpp
 - protobunny/printproto
 - protobunny/proto-db
 - protobunny/proto-schema-filter
@@ -16,7 +18,7 @@
 - pb
 - pbtoolbox - in use, Powerbuilder toolbox
 - pbtools - taken: old python project for generating code in C, https://pbtools.readthedocs.io/en/latest/
-- pbbuddy - not taken
+- pbbuddy - available
 - pbscope - available
 - pbstack - available, but not really a stack
 - pbinspector - trademarked
@@ -25,7 +27,7 @@
 - proto
 - protobuddy - trademarked
 - protobunny - available, but ambiguous internet identities & concepts using it
-- protoknife
+- protoknife - unclear meaning?
 - prototools - trademark in use by german company
 - prototoolbox - not in use
 - protofilter - taken, go package for FieldMask-type behavior
