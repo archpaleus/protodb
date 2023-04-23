@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package records;
+
+message Record {
+  bytes data = 6;
+  fixed32 checksum = 7;
+}
+
+message RecordSet {
+  repeated Record record = 5;
+}
