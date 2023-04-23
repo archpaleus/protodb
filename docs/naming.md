@@ -2,17 +2,16 @@
 
 - protobunny/any
 - protobunny/record
-- protobunny/proto-id-map
 - protobunny/codex
-- protobunny/protobunny-tools-python
+- protobunny/prototools-python
 - protobunny/protobunny-tools-cpp
 - protobunny/printproto
-- protobunny/proto-db
+- protobunny/proto-database
 - protobunny/proto-schema-filter
+- protobunny/proto-schema-id
 - protobunny/protoquery
 
 # Naming Options
-
 
 ### pb
 - pb
@@ -21,7 +20,7 @@
 - pbbuddy - available
 - pbscope - available
 - pbstack - available, but not really a stack
-- pbinspector - trademarked
+- pbinspector - available on github, trademarked
 
 ### proto
 - proto
