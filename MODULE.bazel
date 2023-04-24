@@ -8,8 +8,8 @@ bazel_dep(name = "rules_python", version = "0.21.0")
 bazel_dep(name = "abseil-cpp", repo_name = "com_google_absl", version = "20230125.1")
 
 # Development dependencies
-bazel_dep(name = "googletest", dev_dependency = True,
-          repo_name = "com_google_googletest", version = "1.12.1")
+bazel_dep(name = "googletest", repo_name = "com_google_googletest", version = "1.12.1",
+          dev_dependency = True)
 
 
 pip = use_extension("@rules_python//python:extensions.bzl", "pip")
