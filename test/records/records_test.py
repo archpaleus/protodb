@@ -2,4 +2,4 @@
 
 import sys
 
-from google.protobuf import DescriptorDatabase
+from google.protobuf.descriptor_database import DescriptorDatabase
