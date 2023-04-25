@@ -1,11 +1,13 @@
 module(name = "protodb", version = "0.1.0")
 
 bazel_dep(name = "bazel_skylib", version = "1.4.1")
-bazel_dep(name = "protobuf", repo_name = "com_google_protobuf", version = "21.7")
 bazel_dep(name = "rules_cc", version = "0.0.6")
 bazel_dep(name = "rules_proto", version = "5.3.0-21.7")
 bazel_dep(name = "rules_python", version = "0.21.0")
 bazel_dep(name = "abseil-cpp", repo_name = "com_google_absl", version = "20230125.1")
+
+# We need protobuf 22.0 but it doesn't exist in BCR yet.
+#bazel_dep(name = "protobuf", repo_name = "com_google_protobuf", version = "22.3")
 
 # Development dependencies
 bazel_dep(name = "googletest", repo_name = "com_google_googletest", version = "1.12.1",
@@ -14,10 +16,10 @@ bazel_dep(name = "googletest", repo_name = "com_google_googletest", version = "1
 
 pip = use_extension("@rules_python//python:extensions.bzl", "pip")
 pip.parse(
-    name = "pip",
+    name = "pip_deps",
     requirements_lock = "//src:requirements_lock.txt",
 )
-use_repo(pip, "pip")
+use_repo(pip, "pip_deps")
 
 python = use_extension("@rules_python//python:extensions.bzl", "python")
 python.toolchain(

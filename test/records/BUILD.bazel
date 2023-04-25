@@ -5,11 +5,13 @@ py_proto_library(
   deps = ["//src/records:records_proto"],
 )
 
+
 py_test(
   name = "records_test_py",
   srcs = ["records_test.py"],
   deps = [
     ":py_records_proto",
+    # This target requires protobuf v22.0
     "@com_google_protobuf//:protobuf_python",
   ],
   main = "records_test.py",
