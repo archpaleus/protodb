@@ -4,7 +4,7 @@ package protobunny.schema_id;
 
 // Tracks a unique ID for a message.
 message MessageOptions {
- oneof id {
+  oneof id {
     // A 64-bit id for this message.
     // The first 255 values are reserved for well-known types.
     // The upper 8 bits are reserved and must be 0.
