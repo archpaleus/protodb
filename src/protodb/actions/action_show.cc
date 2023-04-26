@@ -55,6 +55,7 @@
 
 namespace protodb {
 
+using ::absl::StripPrefix;
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::DescriptorPool;
 using ::google::protobuf::EnumDescriptor;
@@ -93,14 +94,21 @@ struct ShowVisitor {
     }
     if (options.packages) {
       if (options.files) {
-      printer.Emit(" ");
+        printer.Emit(" ");
       }
       printer.Emit(absl::StrCat("package: ", descriptor->package(), "\n"));
     }
   }
 
   void operator()(const Descriptor* descriptor) {
-    printer.Emit(absl::StrCat("message: ", descriptor->name(), "\n"));
+    if (options.packages) {
+      printer.Emit(absl::StrCat(
+          "message: ",
+          StripPrefix(descriptor->name(), descriptor->file()->package()),
+          "\n"));
+    } else {
+      printer.Emit(absl::StrCat("message: ", descriptor->full_name(), "\n"));
+    }
   }
 
   void operator()(const FieldDescriptor* descriptor) {
@@ -115,13 +123,21 @@ struct ShowVisitor {
   void operator()(const EnumDescriptor* descriptor) {
     if (options.messages) {
       if (options.packages) {
-        printer.Emit(absl::StrCat("enum: ", absl::StripPrefix(descriptor->name(), descriptor->file()->package()), "\n"));
+        printer.Emit(absl::StrCat(
+            "enum: ",
+            StripPrefix(descriptor->name(), descriptor->file()->package()),
+            "\n"));
       } else {
         printer.Emit(absl::StrCat("enum: ", descriptor->name(), "\n"));
       }
     } else {
       if (options.packages) {
-        printer.Emit(absl::StrCat("enum: ", absl::StripPrefix(absl::StripPrefix(descriptor->full_name(), descriptor->file()->package()), "."), "\n"));
+        printer.Emit(
+            absl::StrCat("enum: ",
+                         StripPrefix(StripPrefix(descriptor->full_name(),
+                                                 descriptor->file()->package()),
+                                     "."),
+                         "\n"));
       } else {
         printer.Emit(absl::StrCat("enum: ", descriptor->full_name(), "\n"));
       }
@@ -192,8 +208,10 @@ bool Show(const protodb::ProtoDb& protodb,
   db->FindAllFileNames(&file_names);
   for (const auto& file : file_names) {
     const auto* file_descriptor = descriptor_pool->FindFileByName(file);
-    const auto visitor = ShowVisitor{.printer = printer, .options = show_options};
-    const WalkOptions walk_options = *static_cast<WalkOptions*>((void*)&show_options);
+    const auto visitor =
+        ShowVisitor{.printer = printer, .options = show_options};
+    const WalkOptions walk_options =
+        *static_cast<WalkOptions*>((void*)&show_options);
     WalkDescriptor<ShowVisitor>(walk_options, file_descriptor, visitor);
   }
 
