@@ -59,8 +59,8 @@
 
 namespace protodb {
 
-using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::FileDescriptorProto;
+using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::SimpleDescriptorDatabase;
 
 namespace {

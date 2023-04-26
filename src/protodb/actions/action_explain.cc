@@ -366,8 +366,7 @@ std::optional<Tag> ReadTag(const ExplainContext& context,
 
 std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
                                                const Tag& tag) {
-  ABSL_CHECK_EQ(tag.wire_type,
-                WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
+  ABSL_CHECK_EQ(tag.wire_type, WireFormatLite::WIRETYPE_LENGTH_DELIMITED);
   CodedInputStream& cis = context.cis;
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
 
@@ -569,8 +568,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
       }
       default:
         std::cerr << "unexpected wire type" << std::endl;
-        if (!WireFormatLite::SkipField(&context.cis, tag->tag))
-          return false;
+        if (!WireFormatLite::SkipField(&context.cis, tag->tag)) return false;
     }
   }
 

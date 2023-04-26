@@ -6,10 +6,10 @@ namespace protoquery {
 int ProtoqueryMain(int argc, char* argv[]) {
   absl::InitializeLog();
 
-  //ABSL_LOG(INFO) << "start";
+  // ABSL_LOG(INFO) << "start";
 
-  //CommandLineInterface cli;
-  //return cli.Run(argc, argv);
+  // CommandLineInterface cli;
+  // return cli.Run(argc, argv);
   return 0;
 }
 

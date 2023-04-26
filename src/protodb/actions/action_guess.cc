@@ -102,8 +102,9 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
     const uint32_t field_number = tag >> 3;
     const auto wire_type = WireFormatLite::GetTagWireType(tag);
     if (!WireTypeValid(wire_type)) {
-      //context->EmitWarning("");
-      //std::cout << "[ field " << field_number << ": invalid wire type " << WireTypeLetter(wire_type) << " ] " << std::endl;
+      // context->EmitWarning("");
+      // std::cout << "[ field " << field_number << ": invalid wire type " <<
+      // WireTypeLetter(wire_type) << " ] " << std::endl;
       return false;
     }
 
@@ -111,8 +112,10 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
     if (wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       uint32_t length;
       if (!cis.ReadVarint32(&length)) {
-        // This might frequently fail if we are parsing a blob that isn't actually a length delimited field.
-        //std::cout << " unexpected end of length-delimted field " << std::endl;
+        // This might frequently fail if we are parsing a blob that isn't
+        // actually a length delimited field.
+        // std::cout << " unexpected end of length-delimted field " <<
+        // std::endl;
         return false;
       }
 
@@ -170,8 +173,7 @@ std::optional<ParsedFieldsGroup> FieldsToGroup(
 
   std::optional<ParsedFieldsGroup> fp;
   for (const ParsedField* field : fields) {
-    if (field->wire_type == WireFormatLite::WIRETYPE_END_GROUP)
-      continue;
+    if (field->wire_type == WireFormatLite::WIRETYPE_END_GROUP) continue;
     if (field->wire_type != wire_type) {
       // DebugLog(absl::StrCat("warning: mismatched types for same field: ",
       // wire_type, " != ", field->wire_type)); warning_mismatched_types = true;
@@ -219,10 +221,9 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
     score -= 2;
   }
 
-  auto field_type = static_cast<WireFormatLite::FieldType>(
-      field_descriptor->type());
-  if (group.wire_type ==
-      WireFormatLite::WireTypeForFieldType(field_type)) {
+  auto field_type =
+      static_cast<WireFormatLite::FieldType>(field_descriptor->type());
+  if (group.wire_type == WireFormatLite::WireTypeForFieldType(field_type)) {
     score += 1;
   } else {
     score -= 10;

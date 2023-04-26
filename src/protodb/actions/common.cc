@@ -18,8 +18,8 @@
 namespace protodb {
 
 using ::google::protobuf::internal::WireFormatLite;
-using ::google::protobuf::io::CordInputStream;
 using ::google::protobuf::io::CodedInputStream;
+using ::google::protobuf::io::CordInputStream;
 
 bool IsAsciiPrintable(std::string_view str) {
   for (char c : str) {
