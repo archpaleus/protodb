@@ -22,8 +22,8 @@ using ::google::protobuf::io::CodedInputStream;
 struct Printer;
 
 struct ScanContext {
-  ScanContext(::google::protobuf::io::CodedInputStream& cis, const absl::Cord* cord,
-              Printer* printer, DescriptorPool* pool,
+  ScanContext(::google::protobuf::io::CodedInputStream& cis,
+              const absl::Cord* cord, Printer* printer, DescriptorPool* pool,
               DescriptorDatabase* database)
       : cis(cis),
         cord(cord),

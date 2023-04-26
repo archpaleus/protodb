@@ -28,8 +28,8 @@
 
 namespace protodb {
 
-using ::google::protobuf::FileDescriptor;
 using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::FileDescriptor;
 
 class ProtoDb;
 

@@ -176,7 +176,7 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
   // Like Open(), but returns the on-disk path in disk_file if disk_file is
   // non-NULL and the file could be successfully opened.
   ZeroCopyInputStream* OpenVirtualFile(absl::string_view virtual_file,
-                                           std::string* disk_file);
+                                       std::string* disk_file);
 
   // Like Open() but given the actual on-disk path.
   ZeroCopyInputStream* OpenDiskFile(absl::string_view filename);

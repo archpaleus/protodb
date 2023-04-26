@@ -31,15 +31,15 @@ class MultiFileErrorCollector {
   // an error with the entire file (e.g. "not found").
   virtual void RecordError(absl::string_view filename, int line, int column,
                            absl::string_view message) {
-    //PROTOBUF_IGNORE_DEPRECATION_START
+    // PROTOBUF_IGNORE_DEPRECATION_START
     AddError(std::string(filename), line, column, std::string(message));
-    //PROTOBUF_IGNORE_DEPRECATION_STOP
+    // PROTOBUF_IGNORE_DEPRECATION_STOP
   }
   virtual void RecordWarning(absl::string_view filename, int line, int column,
                              absl::string_view message) {
-    //PROTOBUF_IGNORE_DEPRECATION_START
+    // PROTOBUF_IGNORE_DEPRECATION_START
     AddWarning(std::string(filename), line, column, std::string(message));
-    //PROTOBUF_IGNORE_DEPRECATION_STOP
+    // PROTOBUF_IGNORE_DEPRECATION_STOP
   }
 
  private:

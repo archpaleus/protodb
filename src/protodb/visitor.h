@@ -121,13 +121,15 @@ struct DescriptorVisitor {
 
     std::map<std::string_view, const EnumDescriptor*> enum_types;
     for (int i = 0; i < descriptor->enum_type_count(); i++) {
-      enum_types[descriptor->enum_type(i)->full_name()] = descriptor->enum_type(i);
+      enum_types[descriptor->enum_type(i)->full_name()] =
+          descriptor->enum_type(i);
     }
     Walk(enum_types);
 
     std::map<std::string_view, const Descriptor*> nested_types;
     for (int i = 0; i < descriptor->nested_type_count(); i++) {
-      nested_types[descriptor->nested_type(i)->full_name()] = descriptor->nested_type(i);
+      nested_types[descriptor->nested_type(i)->full_name()] =
+          descriptor->nested_type(i);
     }
     Walk(nested_types);
 
@@ -150,13 +152,15 @@ struct DescriptorVisitor {
     }
     std::map<std::string_view, const Descriptor*> message_types;
     for (int i = 0; i < descriptor->message_type_count(); i++) {
-      message_types[descriptor->message_type(i)->name()] = descriptor->message_type(i);
+      message_types[descriptor->message_type(i)->name()] =
+          descriptor->message_type(i);
     }
     Walk(message_types);
 
     std::map<std::string_view, const EnumDescriptor*> enum_types;
     for (int i = 0; i < descriptor->enum_type_count(); i++) {
-      enum_types[descriptor->enum_type(i)->full_name()] = descriptor->enum_type(i);
+      enum_types[descriptor->enum_type(i)->full_name()] =
+          descriptor->enum_type(i);
     }
     Walk(enum_types);
 
