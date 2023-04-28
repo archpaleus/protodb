@@ -97,7 +97,7 @@ struct ComparingDescriptorVisitor {
   void Compare(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {
     std::optional<decltype(indent())> with_indent;
     if (options.enums) {
-      visit_fn(lhs, rhs);
+      if (!visit_fn(lhs, rhs)) return;
       with_indent.emplace(indent());
 
       std::map<std::string_view, const EnumValueDescriptor*> lhs_values;
@@ -145,7 +145,8 @@ struct ComparingDescriptorVisitor {
   void Compare(const Descriptor* lhs, const Descriptor* rhs) {
     std::optional<decltype(indent())> with_indent;
     if (options.messages) {
-      visit_fn(lhs, rhs);
+      if (!visit_fn(lhs, rhs))
+        return;
       with_indent.emplace(indent());
     }
     if (options.enums) {

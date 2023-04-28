@@ -64,35 +64,41 @@ struct BreakingChangeVisitor {
   Printer& printer;
 
   auto WithIndent() { return printer.WithIndent(); }
-  void operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) {
+  bool operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+file ", rhs->name(), "\n"));
     } else if (!rhs) {
+      return false;
       printer.Emit(absl::StrCat("-file ", lhs->name(), "\n"));
     } else {
       ABSL_CHECK_EQ(lhs->name(), rhs->name());
       printer.Emit(absl::StrCat(" file ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const Descriptor* lhs, const Descriptor* rhs) {
+  bool operator()(const Descriptor* lhs, const Descriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+message ", rhs->name(), "\n"));
     } else if (!rhs) {
+      return false;
       printer.Emit(absl::StrCat("-message ", lhs->name(), "\n"));
     } else {
       printer.Emit(absl::StrCat(" message ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {
+  bool operator()(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+enum ", rhs->name(), "\n"));
     } else if (!rhs) {
+      return false;
       printer.Emit(absl::StrCat("-enum ", lhs->name(), "\n"));
     } else {
       printer.Emit(absl::StrCat(" enum ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const EnumValueDescriptor* lhs,
+  bool operator()(const EnumValueDescriptor* lhs,
                   const EnumValueDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+ ", rhs->name(), "\n"));
@@ -101,8 +107,9 @@ struct BreakingChangeVisitor {
     } else {
       printer.Emit(absl::StrCat("  ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const FieldDescriptor* lhs, const FieldDescriptor* rhs) {
+  bool operator()(const FieldDescriptor* lhs, const FieldDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+field ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -110,8 +117,9 @@ struct BreakingChangeVisitor {
     } else {
       printer.Emit(absl::StrCat(" field ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const ServiceDescriptor* lhs, const ServiceDescriptor* rhs) {
+  bool operator()(const ServiceDescriptor* lhs, const ServiceDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+service ", rhs->name(), "\n"));
     } else if (!rhs) {
@@ -119,15 +127,18 @@ struct BreakingChangeVisitor {
     } else {
       printer.Emit(absl::StrCat(" service ", lhs->name(), "\n"));
     }
+    return true;
   }
-  void operator()(const MethodDescriptor* lhs, const MethodDescriptor* rhs) {
+  bool operator()(const MethodDescriptor* lhs, const MethodDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+method ", rhs->name(), "\n"));
     } else if (!rhs) {
+      return false;
       printer.Emit(absl::StrCat("-method ", lhs->name(), "\n"));
     } else {
       printer.Emit(absl::StrCat(" method ", lhs->name(), "\n"));
     }
+    return true;
   }
 };
 
