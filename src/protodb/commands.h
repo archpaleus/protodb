@@ -22,7 +22,7 @@ using ::google::protobuf::FileDescriptor;
 
 class ProtoDb;
 
-// The following two are equivalent when using a phsyical file path
+// The following two are equivalent when using a physical file path
 //   protodb add src//foo.proto
 //   protodb add src// src/foo.proto
 //
@@ -31,7 +31,7 @@ class ProtoDb;
 //   protodb add src// //foo.proto
 
 // A .proto file can be virtual or physical.  In this case, both will be
-// searched and the physical file path will take precedence
+// searched and the physical file path will take precedence.
 //   protodb add src// foo.proto
 
 // The .proto file to compile can be specified on the command line using either
@@ -62,6 +62,9 @@ class CommandLineInterface {
     RUN_COMMAND_UNKNOWN = -3,
   };
 
+  // Print the --help text to stderr.
+  void PrintHelpText();
+
   bool FindVirtualFileInProtoPath(CustomSourceTree* source_tree,
                                   std::string input_file,
                                   std::string* disk_file);
@@ -78,9 +81,6 @@ class CommandLineInterface {
                          CustomSourceTree* source_tree,
                          DescriptorDatabase* fallback_database,
                          std::vector<std::string>* virtual_files);
-
-  // Print the --help text to stderr.
-  void PrintHelpText();
 
   // Parses input_files_ into parsed_files
   bool ParseInputFiles(std::vector<std::string> input_files,
