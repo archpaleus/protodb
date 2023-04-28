@@ -198,7 +198,7 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
   int score = 0;
 
   if (descriptor->FindExtensionRangeContainingNumber(group.field_number)) {
-    // TODO: implement better matching for extension fields.
+    // TODO: implement scoring for extension fields.
     score += 2;
     return score;
   }

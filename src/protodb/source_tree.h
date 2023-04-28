@@ -48,9 +48,6 @@
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 
-// Must be included last.
-#include "google/protobuf/port_def.inc"
-
 namespace protodb {
 
 using ::google::protobuf::compiler::SourceTree;
@@ -73,46 +70,51 @@ struct InputPathFile {
 struct InputPathRoot {
   const std::string disk_path;
 
+  // Directories rarely have virtual paths, but it can be useful if mapping
+  // an on-disk directory to a virtual path that doesn't 
   // This is only used for old style --proto_path args that remap
   // Exmaple:
   //   --proto_path=virtual/dir=ondisk/dir
+  //   --proto_path=virtual/file.proto=ondisk/file.proto
   const std::string virtual_path;
 
   std::string ToString() const { return disk_path; }
 };
 
 // An implementation of SourceTree which loads files from locations on disk.
-// This operates distrinctly from CustomSourceTree use by protoc.
-class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
+// This operates similar to DiskSourceTree use by protoc with some variations.
+// Paths to files and directories are represented by InputPathRoot and
+// InputPathFile, which provide better type-safety and clarity in code.
+//
+// This class tries to follow the same rules as DiskSourceTree regarding paths.
+// The original comment from DiskSourceTree::MapPath applies here as well:
+//
+//   If multiple mapped paths apply when opening a file, they will be searched
+//   in order.  For example, if you do:
+//     MapPath("bar", "foo/bar");
+//     MapPath("", "baz");
+//   and then you do:
+//     Open("bar/qux");
+// the SourceTree will first try to open foo/bar/qux, then baz/bar/qux,
+// returning the first one that opens successfully.
+class CustomSourceTree : public SourceTree {
  public:
   CustomSourceTree();
   CustomSourceTree(const CustomSourceTree&) = delete;
   CustomSourceTree& operator=(const CustomSourceTree&) = delete;
   ~CustomSourceTree() override;
 
-  void AddInput(const InputPathFile& file) { input_files_.push_back(file); }
+  // Adds a path to a file that is on disk.
+  void AddInputFile(const InputPathFile& file) {
+    ABSL_LOG(INFO) << "Add inpput file: " << file.ToString();
+    input_files_.push_back(file);
+  }
+   
+  // Adds a path to a root directory on disk.
   void AddInputRoot(const InputPathRoot& root) {
-    ABSL_LOG(INFO) << "AddInputRoot " << root.ToString();
+    ABSL_LOG(INFO) << "Add input root: " << root.ToString();
     input_roots_.push_back(root);
   }
-
-  // Map a path on disk to a location in the SourceTree.  The path may be
-  // either a file or a directory.  If it is a directory, the entire tree
-  // under it will be mapped to the given virtual location.  To map a directory
-  // to the root of the source tree, pass an empty string for virtual_path.
-  //
-  // If multiple mapped paths apply when opening a file, they will be searched
-  // in order.  For example, if you do:
-  //   MapPath("bar", "foo/bar");
-  //   MapPath("", "baz");
-  // and then you do:
-  //   Open("bar/qux");
-  // the CustomSourceTree will first try to open foo/bar/qux, then baz/bar/qux,
-  // returning the first one that opens successfully.
-  //
-  // disk_path may be an absolute path or relative to the current directory,
-  // just like a path you'd pass to open().
-  void MapPath(absl::string_view virtual_path, absl::string_view disk_path);
 
   // Return type for DiskFileToVirtualFile().
   enum DiskFileToVirtualFileResult {
@@ -153,13 +155,13 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
                              std::string* disk_file);
 
   // implements SourceTree -------------------------------------------
+
   ZeroCopyInputStream* Open(absl::string_view filename) override;
 
   std::string GetLastErrorMessage() override;
 
  private:
   std::vector<InputPathRoot> input_roots_;
-
   std::vector<InputPathFile> input_files_;
 
   struct Mapping {
@@ -183,7 +185,5 @@ class PROTOBUF_EXPORT CustomSourceTree : public SourceTree {
 };
 
 }  // namespace protodb
-
-#include "google/protobuf/port_undef.inc"
 
 #endif  // PROTODB_SOURCE_TREE_H__

@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <optional>
 #include <vector>
 
 #include "absl/container/btree_map.h"
@@ -22,9 +23,6 @@
 #include "protodb/actions/action_guess.h"
 #include "protodb/actions/action_show.h"
 #include "protodb/source_tree.h"
-
-// Must be included last.
-#include "google/protobuf/port_def.inc"
 
 namespace protodb {
 
@@ -90,20 +88,28 @@ class CommandLineInterface {
                          DescriptorDatabase* fallback_database,
                          std::vector<std::string>* virtual_files);
 
-  // Return status for ParseArguments() and InterpretArgument().
+  // Return status for ParseArguments()
   enum ParseArgumentStatus {
     PARSE_ARGUMENT_DONE_AND_CONTINUE,
     PARSE_ARGUMENT_DONE_AND_EXIT,
     PARSE_ARGUMENT_FAIL
   };
 
-  // Parse all command-line arguments.
-  ParseArgumentStatus ParseArguments(int argc, const char* const argv[]);
+  struct CommandLineArgs {
+    std::vector<std::string> command_args;
+    std::vector<std::string> input_args;
+  };
 
-  // Read an argument file and append the file's content to the list of
-  // arguments. Return false if the file cannot be read.
-  bool ExpandArgumentFile(const std::string& file,
-                          std::vector<std::string>* arguments);
+  // Parse all command-line arguments.
+  std::optional<CommandLineInterface::CommandLineArgs> 
+      ParseArguments(int argc, const char* const argv[]);
+
+  enum RunCommandStatus {
+    RUN_COMMAND_DONE_AND_CONTINUE,
+    RUN_COMMAND_DONE_AND_EXIT,
+    RUN_COMMAND_FAIL
+  };
+  RunCommandStatus RunCommand(const CommandLineArgs& args);
 
   // Parses a command-line argument into a name/value pair.  Returns
   // true if the next argument in the argv should be used as the value,
@@ -118,34 +124,15 @@ class CommandLineInterface {
   //     name = "", value = "foo.proto"
   bool ParseArgument(const char* arg, std::string* name, std::string* value);
 
-  // Interprets arguments parsed with ParseArgument.
-  ParseArgumentStatus InterpretArgument(const std::string& name,
-                                        const std::string& value);
-
   // Print the --help text to stderr.
   void PrintHelpText();
-
-  // Loads proto_path_ into the provided source_tree.
-  bool InitializeCustomSourceTree(std::vector<std::string> input_params,
-                                  CustomSourceTree* source_tree,
-                                  DescriptorDatabase* fallback_database);
-
-  // Verify that all the input files exist in the given database.
-  bool VerifyInputFilesInDescriptors(DescriptorDatabase* fallback_database);
 
   // Parses input_files_ into parsed_files
   bool ParseInputFiles(std::vector<std::string> input_files,
                        DescriptorPool* descriptor_pool,
                        std::vector<const FileDescriptor*>* parsed_files);
-
-  // -----------------------------------------------------------------
-
-  // The name of the executable as invoked (i.e. argv[0]).
-  std::string executable_name_;
 };
 
 }  // namespace protodb
-
-#include "google/protobuf/port_undef.inc"
 
 #endif  // GOOGLE_PROTOBUF_COMPILER_COMMAND_LINE_INTERFACE_H__

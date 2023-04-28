@@ -156,6 +156,7 @@ CustomSourceTree::CustomSourceTree() {}
 
 CustomSourceTree::~CustomSourceTree() {}
 
+#if 0
 void CustomSourceTree::MapPath(absl::string_view virtual_path,
                                absl::string_view disk_path) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_path << " -> " << disk_path;
@@ -163,6 +164,7 @@ void CustomSourceTree::MapPath(absl::string_view virtual_path,
   mappings_.push_back(
       Mapping(std::string(virtual_path), CanonicalizePath(disk_path)));
 }
+#endif
 
 CustomSourceTree::DiskFileToVirtualFileResult
 CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,

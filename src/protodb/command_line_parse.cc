@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -73,16 +74,15 @@ using ::google::protobuf::DynamicMessageFactory;
 using ::google::protobuf::FileDescriptorProto;
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::Message;
-using ::google::protobuf::TextFormat;
 using ::google::protobuf::RepeatedPtrField;
+using ::google::protobuf::TextFormat;
+using ::google::protobuf::compiler::SourceTreeDescriptorDatabase;
 using ::google::protobuf::io::CodedOutputStream;
 using ::google::protobuf::io::FileInputStream;
 using ::google::protobuf::io::FileOutputStream;
-using ::google::protobuf::compiler::SourceTreeDescriptorDatabase;
 
 namespace {
 
-void DebugLog(std::string_view msg) { std::cerr << msg << std::endl; }
 
 // Get the absolute path of this protoc binary.
 bool GetProtocAbsolutePath(std::string* path) {
@@ -177,61 +177,51 @@ void AddDefaultProtoPaths(CustomSourceTree* source_tree) {
 const char* const CommandLineInterface::kPathSeparator = ",";
 
 CommandLineInterface::CommandLineInterface() {
-  // Clear all members that are set by Run().  Note that we must not clear
-  // members which are set by other methods before Run() is called.
-  executable_name_.clear();
 }
 
 CommandLineInterface::~CommandLineInterface() {}
 
 int CommandLineInterface::Run(int argc, const char* const argv[]) {
-  switch (ParseArguments(argc, argv)) {
-    case PARSE_ARGUMENT_DONE_AND_EXIT:
-      return 0;
-    case PARSE_ARGUMENT_FAIL:
-      return 1;
-    case PARSE_ARGUMENT_DONE_AND_CONTINUE:
-      break;
+  auto maybe_args = ParseArguments(argc, argv);
+
+  if (!maybe_args) {
+    return 1;
   }
+  RunCommand(maybe_args.value());
+
   return 0;
 }
 
-bool CommandLineInterface::InitializeCustomSourceTree(
-    std::vector<std::string> input_params, CustomSourceTree* source_tree,
-    DescriptorDatabase* fallback_database) {
-  std::vector<std::pair<std::string, std::string>> proto_path_;
-
-  return true;
-}
-
 namespace {
-std::unique_ptr<SimpleDescriptorDatabase>
-PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
+std::optional<FileDescriptorSet> ReadFileDescriptorSetFromFile(const std::string& filepath) {
   int fd;
   do {
-    fd = open(descriptor_set_name.c_str(), O_RDONLY | O_BINARY);
+    fd = open(filepath.c_str(), O_RDONLY | O_BINARY);
   } while (fd < 0 && errno == EINTR);
   if (fd < 0) {
-    std::cerr << descriptor_set_name << ": " << strerror(ENOENT) << std::endl;
-    return nullptr;
+    std::cerr << filepath << ": " << strerror(ENOENT) << std::endl;
+    return std::nullopt;
   }
 
   FileDescriptorSet file_descriptor_set;
   bool parsed = file_descriptor_set.ParseFromFileDescriptor(fd);
   if (close(fd) != 0) {
-    std::cerr << descriptor_set_name << ": close: " << strerror(errno)
+    std::cerr << filepath << ": close: " << strerror(errno)
               << std::endl;
-    return nullptr;
+    return std::nullopt;
   }
 
   if (!parsed) {
-    std::cerr << descriptor_set_name << ": Unable to parse." << std::endl;
-    return nullptr;
+    std::cerr << filepath << ": Unable to parse." << std::endl;
+    return std::nullopt;
   }
 
-  std::unique_ptr<SimpleDescriptorDatabase> database{
-      new SimpleDescriptorDatabase()};
+  return file_descriptor_set;
+}
 
+auto PopulateSingleSimpleDescriptorDatabase(const FileDescriptorSet& file_descriptor_set) 
+    -> std::unique_ptr<SimpleDescriptorDatabase> {
+  auto database = std::make_unique<SimpleDescriptorDatabase>();
   for (int j = 0; j < file_descriptor_set.file_size(); j++) {
     FileDescriptorProto previously_added_file_descriptor_proto;
     if (database->FindFileByName(file_descriptor_set.file(j).name(),
@@ -244,6 +234,15 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
     }
   }
   return database;
+}
+
+std::unique_ptr<SimpleDescriptorDatabase>
+PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
+  auto maybe_file_descriptor_set = ReadFileDescriptorSetFromFile(descriptor_set_name);
+  if (!maybe_file_descriptor_set)
+    return nullptr;
+  const auto& file_descriptor_set = *maybe_file_descriptor_set;
+  return PopulateSingleSimpleDescriptorDatabase(file_descriptor_set);
 }
 
 }  // namespace
@@ -314,16 +313,16 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
       return false;
     }
   } else {
-    DebugLog("ok on disk: " + *proto);
+    ABSL_LOG(INFO) << "ok on disk: " << *proto;
   }
 
   // For files that are found on disk, check to see if there is a virtual
   // file that is shadowing the disk file.
-  std::string virtual_file, shadowing_disk_file;
+  std::string virtual_file;
+  std::string shadowing_disk_file;
   switch (source_tree->DiskFileToVirtualFile(*proto, &virtual_file,
                                              &shadowing_disk_file)) {
     case CustomSourceTree::SUCCESS:
-      DebugLog("ource tree SUCCESS - " + *proto + " -> " + virtual_file);
       *proto = virtual_file;
       break;
     case CustomSourceTree::SHADOWED:
@@ -335,7 +334,7 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
                 << std::endl;
       return false;
     case CustomSourceTree::CANNOT_OPEN: {
-      DebugLog("source tree CANNOT_OPEN - " + *proto);
+      //DebugLog("source tree CANNOT_OPEN - " + *proto);
       if (in_fallback_database) {
         return true;
       }
@@ -347,14 +346,14 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
       return false;
     }
     case CustomSourceTree::NO_MAPPING: {
-      DebugLog("source tree NO_MAPPING - " + *proto);
+      //DebugLog("source tree NO_MAPPING - " + *proto);
       // Try to interpret the path as a virtual path.
       std::string disk_file;
       if (source_tree->VirtualFileToDiskFile(*proto, &disk_file) ||
           in_fallback_database) {
         return true;
       } else {
-        DebugLog("source tree unknown - " + *proto);
+        //DebugLog("source tree unknown - " + *proto);
 
         // The input file path can't be mapped to any --proto_path and it also
         // can't be interpreted as a virtual path.
@@ -395,8 +394,8 @@ void CopyFileDescriptor(
   file->CopyJsonNameTo(new_descriptor);
 }
 
-static bool WriteFilesToDescriptorSet(
-    const std::string& output_path, bool include_imports,
+static FileDescriptorSet WriteFilesToDescriptorSet(
+    bool include_imports,
     std::vector<const FileDescriptor*> parsed_files) {
   FileDescriptorSet file_set;
 
@@ -423,7 +422,10 @@ static bool WriteFilesToDescriptorSet(
     CopyFileDescriptor(parsed_files[i], include_imports, &already_seen,
                        file_set.mutable_file());
   }
+  return file_set;
+}
 
+bool WriteFileDescriptorSetToFile(const FileDescriptorSet& file_set, const std::string& output_path) {
   int fd;
   do {
     fd = open(output_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
@@ -455,27 +457,11 @@ static bool WriteFilesToDescriptorSet(
 }
 
 static bool FileIsReadable(std::string_view path) {
-  // The return statements are split apart to make setting breakpoints easier.
-  // Do not collapse this if.
-  if (access(path.data(), F_OK) < 0) {
-    return false;
-  }
-  return true;
+  return (access(path.data(), F_OK) < 0);
 }
 
 static bool FileExists(std::string_view path) {
-  int fd;
-  do {
-    fd = open(path.data(), O_RDONLY);
-  } while (fd < 0 && errno == EINTR);
-  if (fd < 0) {
-    return false;
-  }
-
-  if (close(fd) != 0) {
-    ABSL_LOG(FATAL) << "Unable to close file: " << path;
-  }
-  return true;
+  return std::filesystem::exists(path);
 }
 
 bool CommandLineInterface::ProcessInputPaths(
@@ -553,7 +539,7 @@ bool CommandLineInterface::ProcessInputPaths(
   for (const std::string& input_file : ambigous_input_files) {
     // This is an old style path and can be a path to file on disk
     // or to a "virtual file" that exists in some proto path tree
-    // or in an existing FileDescriptorProto≥
+    // or in an existing FileDescriptorProto.
     // Follow the standard protoc way of handling this.
     std::string disk_file;
     if (FileExists(input_file)) {
@@ -573,7 +559,6 @@ bool CommandLineInterface::ProcessInputPaths(
         default:
           ABSL_LOG(WARNING) << "Do something";
       }
-      // cleaned_input_files.push_back(input_file);
     } else if (FindVirtualFileInProtoPath(source_tree, input_file,
                                           &disk_file)) {
       ABSL_LOG(INFO) << "virtual file found on disk: " << input_file << " at "
@@ -582,8 +567,6 @@ bool CommandLineInterface::ProcessInputPaths(
                              .disk_path = disk_file,
                              .input_path = input_file});
 
-    //} else if (FindVirtualFileInDatabase(input_file, fallback_database)) { // TODO
-
     } else {
       ABSL_LOG(FATAL) << " can't find file: " << input_file;
     }
@@ -591,10 +574,12 @@ bool CommandLineInterface::ProcessInputPaths(
 
   for (const auto& input_file : input_files) {
     if (!input_file.virtual_path.empty()) {
+      #if 0
       source_tree->MapPath(input_file.virtual_path, input_file.disk_path);
+      #endif
       virtual_files->push_back(input_file.virtual_path);
     }
-    source_tree->AddInput(input_file);
+    source_tree->AddInputFile(input_file);
   }
 
   ABSL_CHECK_GE(input_params.size(), input_files.size());
@@ -602,59 +587,62 @@ bool CommandLineInterface::ProcessInputPaths(
   return true;
 }
 
-bool CommandLineInterface::ExpandArgumentFile(
-    const std::string& file, std::vector<std::string>* arguments) {
-  // The argument file is searched in the working directory only. We don't
-  // use the proto import path here.
+static bool ExpandArgumentFile(const std::string& file,
+                               std::vector<std::string>* arguments) {
   std::ifstream file_stream(file.c_str());
   if (!file_stream.is_open()) {
     return false;
   }
-
   std::string argument;
-  // We don't support any kind of shell expansion right now.
   while (std::getline(file_stream, argument)) {
-    // ABSL_LOG(INFO) << argument;
     arguments->push_back(argument);
   }
   return true;
 }
 
-CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
+std::optional<CommandLineInterface::CommandLineArgs>
+CommandLineInterface::ParseArguments(
     int argc, const char* const argv[]) {
-  executable_name_ = argv[0];
-
   std::vector<std::string> arguments;
   for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '@') {
       if (!ExpandArgumentFile(argv[i] + 1, &arguments)) {
         std::cerr << "Failed to open argument file: " << (argv[i] + 1)
                   << std::endl;
-        return PARSE_ARGUMENT_FAIL;
+        return std::nullopt;
       }
     } else {
       arguments.push_back(argv[i]);
     }
   }
 
-  // if no arguments are given, show help
-  if (arguments.empty()) {
-    PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;
-  }
-
   // Iterate through all arguments and parse them.
   int stop_parsing_index = 0;
+  std::vector<std::string> command_args;
   std::vector<std::string> input_params;
   for (int i = 0; i < arguments.size(); ++i) {
     if (stop_parsing_index) {
       input_params.push_back(arguments[i]);
     } else if (arguments[i] == "--") {
       stop_parsing_index = i;
-      continue;
+    } else {
+      command_args.push_back(arguments[i]);
     }
   }
 
+  // if no command arguments are given, show help
+  if (command_args.empty()) {
+    PrintHelpText();
+    return std::nullopt;
+  }
+
+  return CommandLineInterface::CommandLineArgs {
+      .command_args = std::move(command_args),
+      .input_args = std::move(input_params)
+  };
+}
+
+CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(const CommandLineInterface::CommandLineArgs& args) {
   const std::string protodb_path = FindProtoDbLocation();
   auto protodb = std::make_unique<ProtoDb>();
   protodb->LoadDatabase(protodb_path);
@@ -670,18 +658,18 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
 
   // Parse all of the input paths from the command line and add them
   // to the source tree.  All input files will have virtual path added
-  // to input_files.
+  // to virtual_input_files, which will then be parsed.
   DescriptorDatabase* fallback_database = protodb->database();
   std::vector<std::string> virtual_input_files;
-  if (!ProcessInputPaths(input_params, custom_source_tree.get(),
+  if (!ProcessInputPaths(args.input_args, custom_source_tree.get(),
                          fallback_database, &virtual_input_files)) {
     ABSL_LOG(FATAL) << " failed to parse input params";
-    return PARSE_ARGUMENT_FAIL;
+    return RUN_COMMAND_FAIL;
   }
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
       custom_source_tree.get(), protodb->database());
-  //source_tree_database->RecordErrorsTo(error_collector.get());
+  //source_tree_database->RecordErrorsTo(multi_file_error_collector.get());
 
   auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
       source_tree_database.get(),
@@ -691,21 +679,22 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
   if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(),
                        &parsed_files)) {
     ABSL_LOG(FATAL) << " couldn't parse input files";
-    return PARSE_ARGUMENT_FAIL;
+    return RUN_COMMAND_FAIL;
   }
 
-  const std::string command = arguments[0];
+  const std::string command = args.command_args[0];
   std::vector<std::string> params;
-  std::copy(++arguments.begin(), arguments.end(), std::back_inserter(params));
+  std::copy(++args.command_args.begin(), args.command_args.end(), std::back_inserter(params));
 
   if (command == "version") {
     std::cout << "libprotoc "
-              << ::google::protobuf::internal::ProtocVersionString(PROTOBUF_VERSION)
+              << ::google::protobuf::internal::ProtocVersionString(
+                     PROTOBUF_VERSION)
               << PROTOBUF_VERSION_SUFFIX << std::endl;
-    return PARSE_ARGUMENT_DONE_AND_EXIT;  // Exit without running compiler.
+    return RUN_COMMAND_DONE_AND_EXIT;  // Exit without running compiler.
   } else if (command == "help") {
     PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;
+    return RUN_COMMAND_DONE_AND_EXIT;
   } else if (command == "info") {
     {
       auto db = protodb->database();
@@ -726,10 +715,11 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
     }
   } else if (command == "add") {
     if (parsed_files.size() > 0) {
-      auto micros = absl::GetCurrentTimeNanos() / 1000 / 1000;
+      auto millis = absl::GetCurrentTimeNanos() / 1000 / 1000;
       std::string output_path =
-          absl::StrCat(protodb_path, "/added_", micros, ".pb");
-      WriteFilesToDescriptorSet(output_path, true, parsed_files);
+          absl::StrCat(protodb_path, "/added_", millis, ".pb");
+      const auto file_set = WriteFilesToDescriptorSet(true, parsed_files);
+      WriteFileDescriptorSetToFile(file_set, output_path);
       std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to "
                 << output_path << std::endl;
     } else {
@@ -754,16 +744,15 @@ CommandLineInterface::ParseArgumentStatus CommandLineInterface::ParseArguments(
       std::cerr << "error reading input" << std::endl;
     }
   } else if (command == "print") {
-
   } else if (command == "show") {
     Show(*protodb.get(), params);
   } else {
     std::cerr << "Unexpected command: " << command << std::endl;
     PrintHelpText();
-    return PARSE_ARGUMENT_DONE_AND_EXIT;
+    return RUN_COMMAND_DONE_AND_EXIT;
   }
 
-  return PARSE_ARGUMENT_DONE_AND_CONTINUE;
+  return RUN_COMMAND_DONE_AND_CONTINUE;
 }
 
 void CommandLineInterface::PrintHelpText() {
@@ -792,8 +781,8 @@ bool CommandLineInterface::Encode(const ProtoDb& protodb,
     std::cerr << "encode: no message type specified" << std::endl;
     return false;
   }
-  std::string codec_type = params[0];
-  const Descriptor* type = descriptor_pool->FindMessageTypeByName(codec_type);
+  const std::string message_type = params[0];
+  const Descriptor* type = descriptor_pool->FindMessageTypeByName(message_type);
 
   DynamicMessageFactory dynamic_factory(descriptor_pool.get());
   std::unique_ptr<Message> message(dynamic_factory.GetPrototype(type)->New());
@@ -804,9 +793,7 @@ bool CommandLineInterface::Encode(const ProtoDb& protodb,
     return false;
   }
 
-  message->SerializeToFileDescriptor(STDOUT_FILENO);
-
-  return true;
+  return message->SerializeToFileDescriptor(STDOUT_FILENO);
 }
 
 bool CommandLineInterface::Decode(const ProtoDb& protodb,

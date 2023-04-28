@@ -28,18 +28,19 @@ bool IsAsciiPrintable(std::string_view str) {
   return true;
 }
 bool IsAsciiPrintable(absl::Cord cord) {
-  return IsAsciiPrintable(cord.Flatten());
+  for (char c : cord.Chars()) {
+    if (!absl::ascii_isprint(c)) return false;
+  }
+  return true;
 }
 
-bool IsParseableAsMessage(std::string_view str) {
+bool IsParseableAsMessage(absl::Cord cord) {
   // We need at least one field parsed to validate a message.
-  if (str.empty()) return false;
-
-  absl::Cord cord(str);
+  if (cord.empty()) return false;
   CordInputStream cord_input(&cord);
   CodedInputStream cis(&cord_input);
 
-  cis.SetTotalBytesLimit(str.length());
+  cis.SetTotalBytesLimit(cord.size());
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     uint32_t tag = 0;
     if (!cis.ReadVarint32(&tag)) {
@@ -50,9 +51,6 @@ bool IsParseableAsMessage(std::string_view str) {
     }
   }
   return true;
-}
-bool IsParseableAsMessage(absl::Cord cord) {
-  return IsParseableAsMessage(cord.Flatten());
 }
 
 }  // namespace protodb
