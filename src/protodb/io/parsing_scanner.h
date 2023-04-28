@@ -27,11 +27,11 @@ struct ParsedField {
   const WireFormatLite::WireType wire_type;
 
   struct LengthDelimited {
-    // This referes to the data in the length-delimited field, exclusive of the
+    // This refers to the data in the length-delimited field, exclusive of the
     // "length" prefix.
     std::optional<Segment> segment;
 
-    uint32_t length = 0;  // The length of a length-delimited field.
+    uint32_t length = 0;  // The length of the length-delimited field.
     std::vector<ParsedField> message_fields;
 
     // True if the data portion is non-zero in size and parseable
@@ -48,8 +48,7 @@ struct ParsedField {
   std::optional<const LengthDelimited> length_delimited;
 };
 
-// Represents our best guess at what the message's field should be
-// from the ParsedField records we parsed.
+// Represents a grouping of parsed fields.
 struct ParsedFieldsGroup {
   const uint32_t field_number = -1;
   const WireFormatLite::WireType wire_type;
@@ -58,15 +57,6 @@ struct ParsedFieldsGroup {
 
   // A list of all ParsedField records grouped to this field number.
   std::vector<const ParsedField*> fields;
-
-  // The fingerprints that matched for each field's message fields.
-  // This is only populated if a fingerprint was valid for the set of message
-  // fields.
-  // std::vector<const ParsedFieldsGroup> message_fingerprints;
-
-  // Start/end pairs for all of the RLE fields in the message
-  // that match this field number.
-  // std::vector<std::pair<uint32_t, uint32_t>> rle_sections;
 
   std::string to_string() const;
 };
