@@ -67,9 +67,6 @@ class CommandLineInterface {
 
  private:
   bool Add(const DescriptorPool* pool, std::string codec_type);
-  bool Encode(const ProtoDb& pool, std::span<std::string> params);
-  bool Decode(const ProtoDb& pool, std::string codec_type);
-  bool DecodeRaw(const ProtoDb& pool, std::string codec_type);
 
   bool FindVirtualFileInProtoPath(CustomSourceTree* source_tree,
                                   std::string input_file,

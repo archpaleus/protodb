@@ -2,11 +2,43 @@ cc_library(
     name = "actions",
     visibility = ["//visibility:public"],
     deps = [
+        ":action_decode",
+        ":action_encode",
         ":action_explain",
         ":action_guess",
         ":action_show",
         ":action_update",
         ":common",
+    ],
+)
+
+cc_library(
+    name = "action_decode",
+    srcs = ["action_decode.cc"],
+    hdrs = ["action_decode.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb/db:protodb",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+    ],
+)
+
+cc_library(
+    name = "action_encode",
+    srcs = ["action_encode.cc"],
+    hdrs = ["action_encode.h"],
+    include_prefix = "protodb/actions",
+    strip_include_prefix = "",
+    deps = [
+        ":common",
+        "//src/protodb/db:protodb",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
     ],
 )
 

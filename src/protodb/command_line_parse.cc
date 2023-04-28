@@ -48,6 +48,8 @@
 #include "google/protobuf/stubs/common.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
+#include "protodb/actions/action_decode.h"
+#include "protodb/actions/action_encode.h"
 #include "protodb/actions/action_explain.h"
 #include "protodb/actions/action_guess.h"
 #include "protodb/actions/action_show.h"
@@ -727,13 +729,7 @@ CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(
   } else if (command == "encode") {
     Encode(*protodb.get(), params);
   } else if (command == "decode") {
-    std::string decode_type = "unset";
-    if (params.size() >= 1) {
-      decode_type = params[0];
-    } else {
-      decode_type = "google.protobuf.Empty";
-    }
-    Decode(*protodb.get(), decode_type);
+    Decode(*protodb.get(), params);
   } else if (command == "inspect" || command == "explain") {
     if (!Explain(*protodb.get(), params)) {
       std::cerr << "error reading input" << std::endl;
@@ -765,64 +761,6 @@ Action:
 )";
 
   std::cout << std::endl;
-}
-
-bool CommandLineInterface::Encode(const ProtoDb& protodb,
-                                  std::span<std::string> params) {
-  auto descriptor_pool =
-      std::make_unique<DescriptorPool>(protodb.database(), nullptr);
-
-  if (params.empty()) {
-    std::cerr << "encode: no message type specified" << std::endl;
-    return false;
-  }
-  const std::string message_type = params[0];
-  const Descriptor* type = descriptor_pool->FindMessageTypeByName(message_type);
-
-  DynamicMessageFactory dynamic_factory(descriptor_pool.get());
-  std::unique_ptr<Message> message(dynamic_factory.GetPrototype(type)->New());
-
-  FileInputStream in(STDIN_FILENO);
-  if (!TextFormat::Parse(&in, message.get())) {
-    std::cerr << "input: I/O error." << std::endl;
-    return false;
-  }
-
-  return message->SerializeToFileDescriptor(STDOUT_FILENO);
-}
-
-bool CommandLineInterface::Decode(const ProtoDb& protodb,
-                                  std::string codec_type) {
-  auto descriptor_pool =
-      std::make_unique<DescriptorPool>(protodb.database(), nullptr);
-
-  const Descriptor* type = descriptor_pool->FindMessageTypeByName(codec_type);
-  if (type == nullptr) {
-    std::cerr << "Type not defined: " << codec_type << std::endl;
-    return false;
-  }
-
-  DynamicMessageFactory dynamic_factory(descriptor_pool.get());
-  std::unique_ptr<Message> message(dynamic_factory.GetPrototype(type)->New());
-
-  FileInputStream in(STDIN_FILENO);
-  if (!message->ParsePartialFromZeroCopyStream(&in)) {
-    std::cerr << "Failed to parse input." << std::endl;
-    return false;
-  }
-
-  if (!message->IsInitialized()) {
-    std::cerr << "warning:  Input message is missing required fields:  "
-              << message->InitializationErrorString() << std::endl;
-  }
-
-  FileOutputStream out(STDOUT_FILENO);
-  if (!TextFormat::Print(*message, &out)) {
-    std::cerr << "output: I/O error." << std::endl;
-    return false;
-  }
-
-  return true;
 }
 
 }  // namespace protodb
