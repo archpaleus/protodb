@@ -205,10 +205,10 @@ struct ComparingDescriptorVisitor {
       std::map<std::string_view, const Descriptor*> lhs_messages;
       std::map<std::string_view, const Descriptor*> rhs_messages;
       for (int i = 0; lhs && i < lhs->message_type_count(); i++) {
-        lhs_messages[lhs->message_type(i)->name()] = lhs->message_type(i);
+        lhs_messages[lhs->message_type(i)->full_name()] = lhs->message_type(i);
       }
       for (int j = 0; rhs && j < rhs->message_type_count(); j++) {
-        rhs_messages[rhs->message_type(j)->name()] = rhs->message_type(j);
+        rhs_messages[rhs->message_type(j)->full_name()] = rhs->message_type(j);
       }
       CompareMap(lhs_messages, rhs_messages);
     }
@@ -216,19 +216,36 @@ struct ComparingDescriptorVisitor {
       std::map<std::string_view, const EnumDescriptor*> lhs_enums;
       std::map<std::string_view, const EnumDescriptor*> rhs_enums;
       for (int i = 0; lhs && i < lhs->enum_type_count(); i++) {
-        lhs_enums[lhs->enum_type(i)->name()] = lhs->enum_type(i);
+        lhs_enums[lhs->enum_type(i)->full_name()] = lhs->enum_type(i);
       }
       for (int j = 0; rhs && j < rhs->enum_type_count(); j++) {
-        rhs_enums[rhs->enum_type(j)->name()] = rhs->enum_type(j);
+        rhs_enums[rhs->enum_type(j)->full_name()] = rhs->enum_type(j);
       }
       CompareMap(lhs_enums, rhs_enums);
     }
+
+    // TODO(bholmes): extensions
     // for (int i = 0; i < descriptor->extension_count(); i++) {
     //   Compare(descriptor->extension(i));
     // }
+
+    // TODO(bholmes): services
     // for (int i = 0; i < descriptor->service_count(); i++) {
     //   Compare(descriptor->service(i));
     // }
+  }
+
+  void Compare(const std::vector<const Descriptor*>& lhs,
+               const std::vector<const Descriptor*>& rhs) {
+    std::map<std::string_view, const Descriptor*> lhs_messages;
+    for (const auto* message_descriptor : lhs) {
+      lhs_messages[message_descriptor->name()] = message_descriptor;
+    }
+    std::map<std::string_view, const Descriptor*> rhs_messages;
+    for (const auto* message_descriptor : rhs) {
+      rhs_messages[message_descriptor->name()] = message_descriptor;
+    }
+    CompareMap(lhs_messages, rhs_messages);
   }
 
   void Compare(const std::vector<const FileDescriptor*>& lhs,
@@ -272,6 +289,28 @@ void CompareDescriptors(
     const CompareOptions& walk_options,
     const std::vector<const FileDescriptor*>& lhs_descriptors,
     const std::vector<const FileDescriptor*>& rhs_descriptors,
+    VisitFunctor visit_fn) {
+  struct CompleteVisitFunctor : VisitFunctor {
+    using VisitFunctor::operator();
+    explicit CompleteVisitFunctor(VisitFunctor visit_fn)
+        : VisitFunctor(visit_fn) {}
+    void operator()(const void*) const {}
+  };
+
+  ComparingDescriptorVisitor<CompleteVisitFunctor>{
+      .options = walk_options,
+      .visit_fn = CompleteVisitFunctor(visit_fn),
+  }
+      .Compare(lhs_descriptors, rhs_descriptors);
+}
+
+// The visitor does not need to handle all possible node types. Types that are
+// not visitable via `visitor` will be ignored.
+template <typename VisitFunctor>
+void CompareDescriptors(
+    const CompareOptions& walk_options,
+    const std::vector<const Descriptor*>& lhs_descriptors,
+    const std::vector<const Descriptor*>& rhs_descriptors,
     VisitFunctor visit_fn) {
   struct CompleteVisitFunctor : VisitFunctor {
     using VisitFunctor::operator();

@@ -78,12 +78,12 @@ struct BreakingChangeVisitor {
   }
   bool operator()(const Descriptor* lhs, const Descriptor* rhs) {
     if (!lhs) {
-      printer.Emit(absl::StrCat("+message ", rhs->name(), "\n"));
+      printer.Emit(absl::StrCat("+message ", rhs->full_name(), "\n"));
     } else if (!rhs) {
       return false;
-      printer.Emit(absl::StrCat("-message ", lhs->name(), "\n"));
+      printer.Emit(absl::StrCat("-message ", lhs->full_name(), "\n"));
     } else {
-      printer.Emit(absl::StrCat(" message ", lhs->name(), "\n"));
+      printer.Emit(absl::StrCat(" message ", lhs->full_name(), "\n"));
     }
     return true;
   }
@@ -105,7 +105,10 @@ struct BreakingChangeVisitor {
     } else if (!rhs) {
       printer.Emit(absl::StrCat("- ", lhs->name(), "\n"));
     } else {
-      printer.Emit(absl::StrCat("  ", lhs->name(), "\n"));
+      const bool name_match = lhs->name() == rhs->name();
+      const bool number_match = lhs->number() == rhs->number();
+      const bool mismatch = !name_match || !number_match;
+      printer.Emit(absl::StrCat("  ", lhs->name(), (mismatch ? " (mismatch)": ""), "\n"));
     }
     return true;
   }
@@ -115,7 +118,12 @@ struct BreakingChangeVisitor {
     } else if (!rhs) {
       printer.Emit(absl::StrCat("-field ", lhs->name(), "\n"));
     } else {
-      printer.Emit(absl::StrCat(" field ", lhs->name(), "\n"));
+      const bool name_match = lhs->name() == rhs->name();
+      const bool number_match = lhs->number() == rhs->number();
+      const bool type_match = lhs->cpp_type() == rhs->cpp_type();
+      const bool mismatch = !name_match || !number_match || !type_match;
+      if (mismatch)
+        printer.Emit(absl::StrCat(" field ", lhs->name(), (mismatch ? "(mismatch)" : ""), "\n"));
     }
     return true;
   }
@@ -153,6 +161,7 @@ bool Update(const protodb::ProtoDb& protodb,
   FileOutputStream out(STDOUT_FILENO);
   Printer printer(&out, '$');
 
+  #if 0
   std::vector<const FileDescriptor*> protodb_files;
   std::vector<std::string> protodb_file_names;
   db->FindAllFileNames(&protodb_file_names);
@@ -167,6 +176,30 @@ bool Update(const protodb::ProtoDb& protodb,
   CompareOptions walk_options = CompareOptions::All();
   CompareDescriptors<BreakingChangeVisitor>(walk_options, protodb_files,
                                             parsed_files, visitor);
+  #endif
+
+  std::vector<const Descriptor*> protodb_messages;
+  std::vector<std::string> protodb_message_names;
+  db->FindAllMessageNames(&protodb_message_names);
+  for (const auto& message : protodb_message_names) {
+    const Descriptor* message_descriptor =
+        descriptor_pool->FindMessageTypeByName(message);
+    ABSL_CHECK(message_descriptor);
+    protodb_messages.push_back(message_descriptor);
+  }
+
+  std::vector<const Descriptor*> parsed_messages;
+  for (const auto& file : parsed_files) {
+    for (int i = 0; i < file->message_type_count(); ++i) {
+      const auto* descriptor = file->message_type(i);
+      parsed_messages.push_back(descriptor);
+    }
+  }
+
+  auto visitor = BreakingChangeVisitor{.printer = printer};
+  CompareOptions walk_options = CompareOptions::All();
+  CompareDescriptors<BreakingChangeVisitor>(walk_options, protodb_messages,
+                                            parsed_messages, visitor);
 
   return true;
 }
