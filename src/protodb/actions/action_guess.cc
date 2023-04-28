@@ -63,7 +63,15 @@ using ::google::protobuf::io::ZeroCopyInputStream;
 namespace {
 
 struct GuessContext : public ScanContext {
+  static constexpr int kMinScoringThreshold = -100;
+
   using ScanContext::ScanContext;
+
+  // When strict matching is on we will discard message types
+  // with any mismatches in field type or label.  This can 
+  // significantly speed up parsing, but might 
+  const bool strict_matching = true;
+  const int min_scoring_threshold = kMinScoringThreshold;
 
   GuessContext(const GuessContext& parent) : ScanContext(parent) {}
   void DebugLog(const std::string& msg) const {
@@ -71,7 +79,7 @@ struct GuessContext : public ScanContext {
   }
 };
 
-static bool WireTypeValid(int wire_type) {
+static bool IsWireTypeValid(int wire_type) {
   switch (wire_type) {
     case WireFormatLite::WIRETYPE_VARINT:
     case WireFormatLite::WIRETYPE_FIXED64:
@@ -89,22 +97,21 @@ static bool WireTypeValid(int wire_type) {
 
 bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
                         std::vector<ParsedField>& fields) {
+  // We optimistically scan an input stream for valid encoded data.
+  // This will frequently fail for the case when we are parsing a blob
+  // that isn't actually a length delimited field.
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit() &&
          cis.BytesUntilLimit()) {
     Mark tag_mark(context);
     uint32_t tag = 0;
     if (!cis.ReadVarint32(&tag)) {
-      std::cout << " [invalid tag] " << std::endl;
       return false;
     }
     tag_mark.stop();
 
     const uint32_t field_number = tag >> 3;
     const auto wire_type = WireFormatLite::GetTagWireType(tag);
-    if (!WireTypeValid(wire_type)) {
-      // context->EmitWarning("");
-      // std::cout << "[ field " << field_number << ": invalid wire type " <<
-      // WireTypeLetter(wire_type) << " ] " << std::endl;
+    if (!IsWireTypeValid(wire_type)) {
       return false;
     }
 
@@ -112,19 +119,10 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
     if (wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       uint32_t length;
       if (!cis.ReadVarint32(&length)) {
-        // This might frequently fail if we are parsing a blob that isn't
-        // actually a length delimited field.
-        // std::cout << " unexpected end of length-delimted field " <<
-        // std::endl;
         return false;
       }
 
-      auto ld = ParsedField::LengthDelimited{
-          .length = length,
-          // TODO: replace with snippet
-          .rle_start = static_cast<uint32_t>(cis.CurrentPosition()),
-          .rle_end = static_cast<uint32_t>(cis.CurrentPosition() + length),
-      };
+      auto ld = ParsedField::LengthDelimited{ .length = length };
       Mark chunk_mark(context);
       if (length > 0) {
         auto limit = cis.PushLimit(length);
@@ -138,7 +136,6 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
         } else {
           ld.is_valid_message = ld.message_fields.size() > 0;
         }
-        // ABSL_CHECK_EQ(cis.CurrentPosition(), ld.rle_end);
       }
 
       ld.segment.emplace(chunk_mark.segment());
@@ -201,6 +198,7 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
   int score = 0;
 
   if (descriptor->FindExtensionRangeContainingNumber(group.field_number)) {
+    // TODO: implement better matching for extension fields.
     score += 2;
     return score;
   }
@@ -208,7 +206,9 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
   const auto* field_descriptor =
       descriptor->FindFieldByNumber(group.field_number);
   if (!field_descriptor) {
-    // missing field from the message, skip message
+    // Missing field from the message, skip message.  An undeclared
+    // field isn't strictly an error, but too many indicated we don't
+    // have a good match.
     score -= 1;
     return score;
   }
@@ -217,8 +217,10 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
   if (group.is_repeated == field_descriptor->is_repeated()) {
     score += 5;
   } else {
-    // field isn't repeated in descriptor
+    // Field isn't repeated in descriptor.  There are legitimate cases
+    // where this might pop up so we don't dock too many points for this.
     score -= 2;
+    if (context.strict_matching) return score;
   }
 
   auto field_type =
@@ -227,17 +229,21 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
     score += 1;
   } else {
     score -= 10;
+    if (context.strict_matching) return score;
   }
 
   for (const ParsedField* field : group.fields) {
+    if (score < context.min_scoring_threshold) return score;
+
     if (field->length_delimited.has_value() &&
         field->length_delimited->length > 0 &&
         field->length_delimited->message_fields.size()) {
       GuessContext subcontext(context);
       std::vector<ParsedFieldsGroup> message_fingerprints;
       std::vector<const ParsedField*> message_fields;
-      for (const ParsedField& field : field->length_delimited->message_fields)
+      for (const ParsedField& field : field->length_delimited->message_fields) {
         message_fields.push_back(&field);
+      }
       if (field_descriptor->message_type()) {
         const int message_score = ScoreMessageAgainstParsedFields(
             subcontext, message_fields, field_descriptor->message_type());
@@ -273,6 +279,8 @@ static int ScoreMessageAgainstParsedFields(
     const int message_score =
         ScoreMessageAgainstGroup(context, group, descriptor);
     score += message_score;
+
+    if (score < context.min_scoring_threshold) return score;
   }
   return score;
 }
@@ -291,6 +299,10 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
   if (!ScanInputForFields(context, cis, fields)) {
     context.DebugLog(
         absl::StrCat("scan fields error -- cord size: ", data.size()));
+    std::cerr << "Failure parsing message " << std::endl;
+  }
+  if (fields.empty()) {
+    std::cerr << "Unable to parse message " << std::endl;
     return false;
   }
   context.DebugLog(absl::StrCat("scan ok "));
@@ -303,11 +315,13 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
 
   std::vector<std::pair<int, std::string>> scores;
   for (std::string message : search_set) {
+    //std::cerr << "Scoring " << message << " ";
     const Descriptor* descriptor =
         context.descriptor_pool->FindMessageTypeByName(message);
     ABSL_CHECK(descriptor);
     const int score =
         ScoreMessageAgainstParsedFields(context, field_ptrs, descriptor);
+    //std::cerr << score << std::endl;
     scores.push_back(std::make_pair(score, message));
   }
 
@@ -329,6 +343,7 @@ bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
     FileInputStream in(fd);
     in.ReadCord(&cord, 1 << 20);
   } else {
+    std::cout << "Reading from stdin" << std::endl;
     FileInputStream in(STDIN_FILENO);
     in.ReadCord(&cord, 1 << 20);
   }

@@ -18,7 +18,7 @@ namespace protodb {
 
 using ::google::protobuf::internal::WireFormatLite;
 
-// ParsedField represents a field parsed from data "on the wire"
+// Represents a single field parsed from data "on the wire".
 struct ParsedField {
   const Segment tag_segment;
   const Segment field_segment;
@@ -37,8 +37,8 @@ struct ParsedField {
     // For run-length encoded fields, this will contain the start
     // and end markers in the Cord they were read from where
     // rle_length = rle_end - rle_start
-    uint32_t rle_start;  // Deprecate in favor of segement
-    uint32_t rle_end;    // Deprecate in favor of segement
+    //uint32_t rle_start;  // Deprecate in favor of segement
+    //uint32_t rle_end;    // Deprecate in favor of segement
 
     // True if the data portion is non-zero in size and parseable
     // as a protobuf message.
