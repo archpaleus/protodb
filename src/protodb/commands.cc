@@ -613,6 +613,11 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
     return RUN_COMMAND_FAIL;
   }
 
+  if (args.command_args.empty()) {
+    PrintHelpText();
+    return RUN_COMMAND_NONE;
+  }
+
   const std::string command = args.command_args[0];
   std::vector<std::string> params;
   std::copy(++args.command_args.begin(), args.command_args.end(),

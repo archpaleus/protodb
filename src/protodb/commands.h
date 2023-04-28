@@ -57,11 +57,10 @@ class CommandLineInterface {
  private:
   enum RunCommandStatus {
     RUN_COMMAND_OK = 0,
+    RUN_COMMAND_NONE = 1,
     RUN_COMMAND_FAIL = -2,
     RUN_COMMAND_UNKNOWN = -3,
   };
-
-  bool Add(const DescriptorPool* pool, std::string codec_type);
 
   bool FindVirtualFileInProtoPath(CustomSourceTree* source_tree,
                                   std::string input_file,
