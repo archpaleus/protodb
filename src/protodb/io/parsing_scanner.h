@@ -34,12 +34,6 @@ struct ParsedField {
     uint32_t length = 0;  // The length of a length-delimited field.
     std::vector<ParsedField> message_fields;
 
-    // For run-length encoded fields, this will contain the start
-    // and end markers in the Cord they were read from where
-    // rle_length = rle_end - rle_start
-    //uint32_t rle_start;  // Deprecate in favor of segement
-    //uint32_t rle_end;    // Deprecate in favor of segement
-
     // True if the data portion is non-zero in size and parseable
     // as a protobuf message.
     bool is_valid_message = false;

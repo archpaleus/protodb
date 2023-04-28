@@ -68,8 +68,8 @@ struct GuessContext : public ScanContext {
   using ScanContext::ScanContext;
 
   // When strict matching is on we will discard message types
-  // with any mismatches in field type or label.  This can 
-  // significantly speed up parsing, but might 
+  // with any mismatches in field type or label.  This can
+  // significantly speed up parsing, but might
   const bool strict_matching = true;
   const int min_scoring_threshold = kMinScoringThreshold;
 
@@ -122,7 +122,7 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
         return false;
       }
 
-      auto ld = ParsedField::LengthDelimited{ .length = length };
+      auto ld = ParsedField::LengthDelimited{.length = length};
       Mark chunk_mark(context);
       if (length > 0) {
         auto limit = cis.PushLimit(length);
@@ -315,13 +315,11 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
 
   std::vector<std::pair<int, std::string>> scores;
   for (std::string message : search_set) {
-    //std::cerr << "Scoring " << message << " ";
     const Descriptor* descriptor =
         context.descriptor_pool->FindMessageTypeByName(message);
     ABSL_CHECK(descriptor);
     const int score =
         ScoreMessageAgainstParsedFields(context, field_ptrs, descriptor);
-    //std::cerr << score << std::endl;
     scores.push_back(std::make_pair(score, message));
   }
 

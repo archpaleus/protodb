@@ -70,9 +70,8 @@ struct InputPathFile {
 struct InputPathRoot {
   const std::string disk_path;
 
-  // Directories rarely have virtual paths, but it can be useful if mapping
-  // an on-disk directory to a virtual path that doesn't 
-  // This is only used for old style --proto_path args that remap
+  // This is only used for old style --proto_path args that map a custom
+  // virtual path onto a disk path.
   // Exmaple:
   //   --proto_path=virtual/dir=ondisk/dir
   //   --proto_path=virtual/file.proto=ondisk/file.proto
@@ -95,8 +94,8 @@ struct InputPathRoot {
 //     MapPath("", "baz");
 //   and then you do:
 //     Open("bar/qux");
-// the SourceTree will first try to open foo/bar/qux, then baz/bar/qux,
-// returning the first one that opens successfully.
+//   the SourceTree will first try to open foo/bar/qux, then baz/bar/qux,
+//   returning the first one that opens successfully.
 class CustomSourceTree : public SourceTree {
  public:
   CustomSourceTree();
@@ -109,7 +108,7 @@ class CustomSourceTree : public SourceTree {
     ABSL_LOG(INFO) << "Add inpput file: " << file.ToString();
     input_files_.push_back(file);
   }
-   
+
   // Adds a path to a root directory on disk.
   void AddInputRoot(const InputPathRoot& root) {
     ABSL_LOG(INFO) << "Add input root: " << root.ToString();

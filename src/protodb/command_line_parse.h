@@ -4,11 +4,11 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
 #include <variant>
-#include <optional>
 #include <vector>
 
 #include "absl/container/btree_map.h"
@@ -101,8 +101,8 @@ class CommandLineInterface {
   };
 
   // Parse all command-line arguments.
-  std::optional<CommandLineInterface::CommandLineArgs> 
-      ParseArguments(int argc, const char* const argv[]);
+  std::optional<CommandLineInterface::CommandLineArgs> ParseArguments(
+      int argc, const char* const argv[]);
 
   enum RunCommandStatus {
     RUN_COMMAND_DONE_AND_CONTINUE,

@@ -83,7 +83,6 @@ using ::google::protobuf::io::FileOutputStream;
 
 namespace {
 
-
 // Get the absolute path of this protoc binary.
 bool GetProtocAbsolutePath(std::string* path) {
 #if defined(__APPLE__)
@@ -176,8 +175,7 @@ void AddDefaultProtoPaths(CustomSourceTree* source_tree) {
 
 const char* const CommandLineInterface::kPathSeparator = ",";
 
-CommandLineInterface::CommandLineInterface() {
-}
+CommandLineInterface::CommandLineInterface() {}
 
 CommandLineInterface::~CommandLineInterface() {}
 
@@ -193,7 +191,8 @@ int CommandLineInterface::Run(int argc, const char* const argv[]) {
 }
 
 namespace {
-std::optional<FileDescriptorSet> ReadFileDescriptorSetFromFile(const std::string& filepath) {
+std::optional<FileDescriptorSet> ReadFileDescriptorSetFromFile(
+    const std::string& filepath) {
   int fd;
   do {
     fd = open(filepath.c_str(), O_RDONLY | O_BINARY);
@@ -206,8 +205,7 @@ std::optional<FileDescriptorSet> ReadFileDescriptorSetFromFile(const std::string
   FileDescriptorSet file_descriptor_set;
   bool parsed = file_descriptor_set.ParseFromFileDescriptor(fd);
   if (close(fd) != 0) {
-    std::cerr << filepath << ": close: " << strerror(errno)
-              << std::endl;
+    std::cerr << filepath << ": close: " << strerror(errno) << std::endl;
     return std::nullopt;
   }
 
@@ -219,7 +217,8 @@ std::optional<FileDescriptorSet> ReadFileDescriptorSetFromFile(const std::string
   return file_descriptor_set;
 }
 
-auto PopulateSingleSimpleDescriptorDatabase(const FileDescriptorSet& file_descriptor_set) 
+auto PopulateSingleSimpleDescriptorDatabase(
+    const FileDescriptorSet& file_descriptor_set)
     -> std::unique_ptr<SimpleDescriptorDatabase> {
   auto database = std::make_unique<SimpleDescriptorDatabase>();
   for (int j = 0; j < file_descriptor_set.file_size(); j++) {
@@ -238,9 +237,9 @@ auto PopulateSingleSimpleDescriptorDatabase(const FileDescriptorSet& file_descri
 
 std::unique_ptr<SimpleDescriptorDatabase>
 PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
-  auto maybe_file_descriptor_set = ReadFileDescriptorSetFromFile(descriptor_set_name);
-  if (!maybe_file_descriptor_set)
-    return nullptr;
+  auto maybe_file_descriptor_set =
+      ReadFileDescriptorSetFromFile(descriptor_set_name);
+  if (!maybe_file_descriptor_set) return nullptr;
   const auto& file_descriptor_set = *maybe_file_descriptor_set;
   return PopulateSingleSimpleDescriptorDatabase(file_descriptor_set);
 }
@@ -334,7 +333,6 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
                 << std::endl;
       return false;
     case CustomSourceTree::CANNOT_OPEN: {
-      //DebugLog("source tree CANNOT_OPEN - " + *proto);
       if (in_fallback_database) {
         return true;
       }
@@ -346,15 +344,12 @@ bool CommandLineInterface::MakeProtoProtoPathRelative(
       return false;
     }
     case CustomSourceTree::NO_MAPPING: {
-      //DebugLog("source tree NO_MAPPING - " + *proto);
       // Try to interpret the path as a virtual path.
       std::string disk_file;
       if (source_tree->VirtualFileToDiskFile(*proto, &disk_file) ||
           in_fallback_database) {
         return true;
       } else {
-        //DebugLog("source tree unknown - " + *proto);
-
         // The input file path can't be mapped to any --proto_path and it also
         // can't be interpreted as a virtual path.
         std::cerr
@@ -395,8 +390,7 @@ void CopyFileDescriptor(
 }
 
 static FileDescriptorSet WriteFilesToDescriptorSet(
-    bool include_imports,
-    std::vector<const FileDescriptor*> parsed_files) {
+    bool include_imports, std::vector<const FileDescriptor*> parsed_files) {
   FileDescriptorSet file_set;
 
   absl::flat_hash_set<const FileDescriptor*> already_seen;
@@ -425,7 +419,8 @@ static FileDescriptorSet WriteFilesToDescriptorSet(
   return file_set;
 }
 
-bool WriteFileDescriptorSetToFile(const FileDescriptorSet& file_set, const std::string& output_path) {
+bool WriteFileDescriptorSetToFile(const FileDescriptorSet& file_set,
+                                  const std::string& output_path) {
   int fd;
   do {
     fd = open(output_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,
@@ -574,9 +569,9 @@ bool CommandLineInterface::ProcessInputPaths(
 
   for (const auto& input_file : input_files) {
     if (!input_file.virtual_path.empty()) {
-      #if 0
+#if 0
       source_tree->MapPath(input_file.virtual_path, input_file.disk_path);
-      #endif
+#endif
       virtual_files->push_back(input_file.virtual_path);
     }
     source_tree->AddInputFile(input_file);
@@ -601,8 +596,7 @@ static bool ExpandArgumentFile(const std::string& file,
 }
 
 std::optional<CommandLineInterface::CommandLineArgs>
-CommandLineInterface::ParseArguments(
-    int argc, const char* const argv[]) {
+CommandLineInterface::ParseArguments(int argc, const char* const argv[]) {
   std::vector<std::string> arguments;
   for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '@') {
@@ -636,13 +630,13 @@ CommandLineInterface::ParseArguments(
     return std::nullopt;
   }
 
-  return CommandLineInterface::CommandLineArgs {
+  return CommandLineInterface::CommandLineArgs{
       .command_args = std::move(command_args),
-      .input_args = std::move(input_params)
-  };
+      .input_args = std::move(input_params)};
 }
 
-CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(const CommandLineInterface::CommandLineArgs& args) {
+CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(
+    const CommandLineInterface::CommandLineArgs& args) {
   const std::string protodb_path = FindProtoDbLocation();
   auto protodb = std::make_unique<ProtoDb>();
   protodb->LoadDatabase(protodb_path);
@@ -669,7 +663,7 @@ CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(const Co
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
       custom_source_tree.get(), protodb->database());
-  //source_tree_database->RecordErrorsTo(multi_file_error_collector.get());
+  // source_tree_database->RecordErrorsTo(multi_file_error_collector.get());
 
   auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
       source_tree_database.get(),
@@ -684,7 +678,8 @@ CommandLineInterface::RunCommandStatus CommandLineInterface::RunCommand(const Co
 
   const std::string command = args.command_args[0];
   std::vector<std::string> params;
-  std::copy(++args.command_args.begin(), args.command_args.end(), std::back_inserter(params));
+  std::copy(++args.command_args.begin(), args.command_args.end(),
+            std::back_inserter(params));
 
   if (command == "version") {
     std::cout << "libprotoc "
