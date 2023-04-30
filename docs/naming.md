@@ -36,6 +36,7 @@
 - protoid - github uw-labs/protoid, https://www.instagram.com/idproto/
 - protopipe
 - protoscan
+- protolock - taken
 
 
 ### pro
