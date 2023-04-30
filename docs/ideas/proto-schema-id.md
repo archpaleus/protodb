@@ -1,14 +1,16 @@
-# Proto ID
+# Proto Schema IDs
 
-Provides a unique ID for all messages within a .proto closure that enables simpler
-ways to identfy the format of a protobuf messages across the wrire.
+Provides a unique identifiers for messages within a .proto closure that
+enables simpler ways to identify the format of a protobuf message across
+the wire.
 
-Using these IDs, you can more succiently communicate your message type in an Any
-message.   Writing a 64-bit protoid requires 5 bytes of data on the wire, keeping 
-overhead minimal.  Compared to a google.protobuf.Any message, which is typically
+Using these IDs, you can more succinctly communicate your message type in an
+`Any`-style message.   Writing a 64-bit protoid requires 5 bytes of data on
+the wire, keeping overhead minimal, especially when compared to a
+`google.protobuf.Any` message, which is typically
 more than 40 bytes to specify the message type.
 
-In total an Any message has an overhead of 6-11 bytes on top of
+In total a 'protoid.Any` message has an overhead of 6-11 bytes on top of
 the serialized message.
 
 ```
