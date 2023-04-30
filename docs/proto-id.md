@@ -21,7 +21,6 @@ message MyMessage {
 
   ...
 }
-
 ```
 
 
