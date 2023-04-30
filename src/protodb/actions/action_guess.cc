@@ -71,7 +71,17 @@ struct GuessContext : public ScanContext {
   // with any mismatches in field type or label.  This can
   // significantly speed up parsing, but might
   const bool strict_matching = true;
+  
+  // Specifies the minimum bound we will accept when scoring
+  // a message against wire data. Crossing this threshold
+  // will terminate any further scoring.
   const int min_scoring_threshold = kMinScoringThreshold;
+
+  // Specifies the number bytes that we'll try to read
+  // when parsing wire data.  Once we cross this, we stop parsing
+  // any more fields in a message.  This will signficiantly increase
+  // performance on very large protos.
+  const int scan_threshold_in_bytes = 100 * 1024;
 
   GuessContext(const GuessContext& parent) : ScanContext(parent) {}
   void DebugLog(const std::string& msg) const {
@@ -102,6 +112,12 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
   // that isn't actually a length delimited field.
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit() &&
          cis.BytesUntilLimit()) {
+    if (context.scan_threshold_in_bytes) {
+      if (cis.CurrentPosition() > context.scan_threshold_in_bytes) {
+        break;
+      }
+    }
+
     Mark tag_mark(context);
     uint32_t tag = 0;
     if (!cis.ReadVarint32(&tag)) {
