@@ -339,8 +339,8 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
     scores.push_back(std::make_pair(score, message));
   }
 
-  absl::c_sort(scores);
   if (!scores.empty()) {
+    absl::c_sort(scores);
     auto& [score, message] = *scores.rbegin();
     std::cout << message << std::endl;
   }
