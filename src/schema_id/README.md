@@ -1,9 +1,9 @@
-# Proto ID
+# Proto Schema ID
 
 Provides a way to identify protobuf messages with unique ID which can be transmitted
 efficiently over the wire.
 
-Serializing and desiralizing
+## Serializing and Deserializing
 ```
 MyProto my_proto = ...;
 protobunny::Any any;
@@ -11,16 +11,14 @@ protobunny::Any any;
 protobunny::SchemaMap schema_map;
 ABSL_CHECK(schema_map.Pack(my_proto, &any));
 
-ABSL_CHECK(schema_map.Unpack(any, &my_proto));
+google::protobuf::Message message;
+ABSL_CHECK(schema_map.Unpack(any, &message));
+
+ABSL_CHECK(schema_map.Is<MyProto>(any));
+schema_map.Unpack(any, &my_proto);
 ```
 
-Over the wire the data for protobuf::Any is stored efficently with only an ID into
-the proto ID schema mapping and the bytes of the message.
-```
-message_id: 0x1234567
-message: ...
-```
-
+## Protobuf Schema Annotations
 ```
 message MyProto {
   option (protobunny.schema).id32 = 0x1234567;
@@ -29,19 +27,31 @@ message MyProto {
 }
 ```
 
+## Wire Format
+Over the wire, the data for protobuf::Any is stored efficently with only an
+ID into the schema mapping and the bytes of the message.
+```
+id32: 0x1234567
+message: ...
+```
+
+## Schema Mapping Data
 When compiling your protos, a schema map is built by looking at all annotated 
 messages in a file descriptor set.
+
+Mapping as a protobuf message
 ```
 entry { id32: 0x1234567 message_type: "MyProto" }
 ```
 
-
-Proto ID becomes a lighter weight way to transfer protobufs dynamically
+Additionally the mapping can be generated in code.  For example, in C++ we
+can generate a constexpr data structure that can be read directly without
+incurring any allocations.
 
 
 # Challenges with existing google.protobuf.Any
 
-- Serializing full types in google.protobuf.Any is quite larger.
-- Wire data can break due to renames; with ProtoID, the naming can change so
-  long as the ID is consistent.
+- Serializing full types in google.protobuf.Any is quite large.
+- Wire data can break due to renames; with ProtoSchemaID, the naming can change so
+  long as the Schema ID is consistent.
 
