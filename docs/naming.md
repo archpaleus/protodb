@@ -21,6 +21,7 @@
 - pbscope - available
 - pbstack - available, but not really a stack
 - pbinspector - available on github, trademarked
+- pbschema
 
 ### proto
 - proto
@@ -37,6 +38,7 @@
 - protopipe
 - protoscan
 - protolock - taken
+- protoschema - ??
 
 
 ### pro
