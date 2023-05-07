@@ -118,7 +118,8 @@ std::string BinToHex(std::string_view bytes, unsigned maxlen = UINT32_MAX) {
       ss << " ...";
       break;
     }
-    if (i != 0) ss << " ";
+    if (i != 0)
+      ss << " ";
     const unsigned char b = bytes[i];
     ss << std::setw(2) << std::setfill('0') << (unsigned)b;
   }
@@ -169,7 +170,9 @@ struct Field {
 
 struct ExplainPrinter : public Printer {
   using Printer::Printer;
-  ExplainPrinter() { indent_ = 0; }
+  ExplainPrinter() {
+    indent_ = 0;
+  }
   virtual ~ExplainPrinter() {}
 
   void Emit(const Tag& tag, const Field& field) {
@@ -263,7 +266,8 @@ struct ExplainMark {
       : context_(context), marker_start_(context_.cis.CurrentPosition()) {}
 
   void stop() {
-    if (!maybe_marker_end_) maybe_marker_end_ = context_.cis.CurrentPosition();
+    if (!maybe_marker_end_)
+      maybe_marker_end_ = context_.cis.CurrentPosition();
   }
 
   uint32_t distance() {
@@ -372,13 +376,16 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
 
   uint32_t length = 0;
   ExplainMark length_mark(context);
-  if (!cis.ReadVarint32(&length)) return std::nullopt;
+  if (!cis.ReadVarint32(&length))
+    return std::nullopt;
   const auto length_segment = length_mark.segment();
 
-  if (cis.BytesUntilTotalBytesLimit() < length) return std::nullopt;
+  if (cis.BytesUntilTotalBytesLimit() < length)
+    return std::nullopt;
 
   ExplainMark chunk_mark(context);
-  if (!cis.Skip(length)) return std::nullopt;
+  if (!cis.Skip(length))
+    return std::nullopt;
   const auto chunk_segment = chunk_mark.segment();
   ABSL_CHECK_EQ(chunk_segment.length, length);
   ABSL_CHECK_EQ(chunk_segment.snippet.size(), length);
@@ -450,7 +457,8 @@ std::optional<Field> ReadField_VarInt(const ExplainContext& context,
 
   ExplainMark field_mark(context);
   uint64_t varint = 0;
-  if (!context.cis.ReadVarint64(&varint)) return std::nullopt;
+  if (!context.cis.ReadVarint64(&varint))
+    return std::nullopt;
 
   return Field{
       .segment = field_mark.segment(),
@@ -467,7 +475,8 @@ std::optional<Field> ReadField_Fixed32(const ExplainContext& context,
 
   ExplainMark field_mark(context);
   uint32_t fixed32;
-  if (!context.cis.ReadLittleEndian32(&fixed32)) return std::nullopt;
+  if (!context.cis.ReadLittleEndian32(&fixed32))
+    return std::nullopt;
 
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
   return Field{
@@ -485,7 +494,8 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 
   ExplainMark field_mark(context);
   uint64_t fixed64;
-  if (!context.cis.ReadLittleEndian64(&fixed64)) return std::nullopt;
+  if (!context.cis.ReadLittleEndian64(&fixed64))
+    return std::nullopt;
 
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
   return Field{
@@ -568,7 +578,8 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
       }
       default:
         std::cerr << "unexpected wire type" << std::endl;
-        if (!WireFormatLite::SkipField(&context.cis, tag->tag)) return false;
+        if (!WireFormatLite::SkipField(&context.cis, tag->tag))
+          return false;
     }
   }
 
@@ -585,7 +596,8 @@ std::string readFile(std::filesystem::path path) {
   return result;
 }
 
-bool Explain(const ProtoSchemaDb& protodb, const std::span<std::string>& params) {
+bool Explain(const ProtoSchemaDb& protodb,
+             const std::span<std::string>& params) {
   std::string decode_type = "unset";
   if (params.size() >= 1) {
     decode_type = params[0];

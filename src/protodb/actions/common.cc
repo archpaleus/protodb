@@ -23,20 +23,23 @@ using ::google::protobuf::io::CordInputStream;
 
 bool IsAsciiPrintable(std::string_view str) {
   for (char c : str) {
-    if (!absl::ascii_isprint(c)) return false;
+    if (!absl::ascii_isprint(c))
+      return false;
   }
   return true;
 }
 bool IsAsciiPrintable(absl::Cord cord) {
   for (char c : cord.Chars()) {
-    if (!absl::ascii_isprint(c)) return false;
+    if (!absl::ascii_isprint(c))
+      return false;
   }
   return true;
 }
 
 bool IsParseableAsMessage(absl::Cord cord) {
   // We need at least one field parsed to validate a message.
-  if (cord.empty()) return false;
+  if (cord.empty())
+    return false;
   CordInputStream cord_input(&cord);
   CodedInputStream cis(&cord_input);
 

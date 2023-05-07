@@ -87,7 +87,9 @@ struct ShowVisitor {
   Printer& printer;
   const ShowOptions options;
 
-  auto WithIndent() { return printer.WithIndent(); }
+  auto WithIndent() {
+    return printer.WithIndent();
+  }
   void operator()(const FileDescriptor* descriptor) {
     if (options.files) {
       printer.Emit(absl::StrCat("file: ", descriptor->name(), "\n"));

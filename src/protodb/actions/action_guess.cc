@@ -71,7 +71,7 @@ struct GuessContext : public ScanContext {
   // with any mismatches in field type or label.  This can
   // significantly speed up parsing, but might
   const bool strict_matching = true;
-  
+
   // Specifies the minimum bound we will accept when scoring
   // a message against wire data. Crossing this threshold
   // will terminate any further scoring.
@@ -85,7 +85,8 @@ struct GuessContext : public ScanContext {
 
   GuessContext(const GuessContext& parent) : ScanContext(parent) {}
   void DebugLog(const std::string& msg) const {
-    if (printer) printer->EmitLine(msg);
+    if (printer)
+      printer->EmitLine(msg);
   }
 };
 
@@ -148,7 +149,8 @@ bool ScanInputForFields(const GuessContext& context, CodedInputStream& cis,
         // Check if we were able to parse the entire message
         const int bytes_remaining = length - chunk_mark.distance();
         if (bytes_remaining) {
-          if (!cis.Skip(bytes_remaining)) return false;
+          if (!cis.Skip(bytes_remaining))
+            return false;
         } else {
           ld.is_valid_message = ld.message_fields.size() > 0;
         }
@@ -186,7 +188,8 @@ std::optional<ParsedFieldsGroup> FieldsToGroup(
 
   std::optional<ParsedFieldsGroup> fp;
   for (const ParsedField* field : fields) {
-    if (field->wire_type == WireFormatLite::WIRETYPE_END_GROUP) continue;
+    if (field->wire_type == WireFormatLite::WIRETYPE_END_GROUP)
+      continue;
     if (field->wire_type != wire_type) {
       // DebugLog(absl::StrCat("warning: mismatched types for same field: ",
       // wire_type, " != ", field->wire_type)); warning_mismatched_types = true;
@@ -236,7 +239,8 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
     // Field isn't repeated in descriptor.  There are legitimate cases
     // where this might pop up so we don't dock too many points for this.
     score -= 2;
-    if (context.strict_matching) return score;
+    if (context.strict_matching)
+      return score;
   }
 
   auto field_type =
@@ -245,11 +249,13 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
     score += 1;
   } else {
     score -= 10;
-    if (context.strict_matching) return score;
+    if (context.strict_matching)
+      return score;
   }
 
   for (const ParsedField* field : group.fields) {
-    if (score < context.min_scoring_threshold) return score;
+    if (score < context.min_scoring_threshold)
+      return score;
 
     if (field->length_delimited.has_value() &&
         field->length_delimited->length > 0 &&
@@ -296,20 +302,23 @@ static int ScoreMessageAgainstParsedFields(
         ScoreMessageAgainstGroup(context, group, descriptor);
     score += message_score;
 
-    if (score < context.min_scoring_threshold) return score;
+    if (score < context.min_scoring_threshold)
+      return score;
   }
   return score;
 }
 
 static bool Guess(const absl::Cord& data, const protodb::ProtoSchemaDb& protodb,
                   std::set<std::string>* matches) {
-  auto pool = std::make_unique<DescriptorPool>(protodb.snapshot_database(), nullptr);
+  auto pool =
+      std::make_unique<DescriptorPool>(protodb.snapshot_database(), nullptr);
 
   CordInputStream cord_input(&data);
   ZeroCopyInputStream* zcis = &cord_input;
   CodedInputStream cis(zcis);
 
-  GuessContext context{cis, &data, nullptr, pool.get(), protodb.snapshot_database()};
+  GuessContext context{cis, &data, nullptr, pool.get(),
+                       protodb.snapshot_database()};
   cis.SetTotalBytesLimit(data.size());
   std::vector<ParsedField> fields;
   if (!ScanInputForFields(context, cis, fields)) {

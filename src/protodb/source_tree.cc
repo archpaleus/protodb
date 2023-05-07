@@ -61,7 +61,8 @@ static bool FileExists(std::string_view path) {
 //   will complain that baz.proto is not inside the --proto_path.
 static std::string CanonicalizePath(absl::string_view path) {
   std::vector<absl::string_view> canonical_parts;
-  if (!path.empty() && path.front() == '/') canonical_parts.push_back("");
+  if (!path.empty() && path.front() == '/')
+    canonical_parts.push_back("");
   for (absl::string_view part : absl::StrSplit(path, '/', absl::SkipEmpty())) {
     if (part == ".") {
       // Ignore.
@@ -69,7 +70,8 @@ static std::string CanonicalizePath(absl::string_view path) {
       canonical_parts.push_back(part);
     }
   }
-  if (!path.empty() && path.back() == '/') canonical_parts.push_back("");
+  if (!path.empty() && path.back() == '/')
+    canonical_parts.push_back("");
 
   return absl::StrJoin(canonical_parts, "/");
 }
@@ -112,7 +114,8 @@ static bool ApplyMapping(absl::string_view filename,
       return false;
     }
     result->assign(std::string(new_prefix));
-    if (!result->empty()) result->push_back('/');
+    if (!result->empty())
+      result->push_back('/');
     result->append(std::string(filename));
     return true;
   } else if (absl::StartsWith(filename, old_prefix)) {
@@ -142,7 +145,8 @@ static bool ApplyMapping(absl::string_view filename,
           return false;
         }
         result->assign(std::string(new_prefix));
-        if (!result->empty()) result->push_back('/');
+        if (!result->empty())
+          result->push_back('/');
         result->append(std::string(after_prefix));
         return true;
       }

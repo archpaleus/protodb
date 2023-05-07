@@ -64,8 +64,8 @@ using ::google::protobuf::FileDescriptorProto;
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::SimpleDescriptorDatabase;
 
-static std::optional<std::filesystem::path> RecursiveFind(std::string_view filename,
-                          std::filesystem::path directory) {
+static std::optional<std::filesystem::path> RecursiveFind(
+    std::string_view filename, std::filesystem::path directory) {
   if (directory.empty() || filename.empty()) {
     return std::nullopt;
   }
@@ -96,7 +96,7 @@ static std::optional<std::filesystem::path> FindProtoDbDirectory() {
   if (!dir.has_value()) {
     return std::nullopt;
   }
-  
+
   if (!std::filesystem::is_directory(std::filesystem::path(*dir))) {
     return std::nullopt;
   }
@@ -107,7 +107,8 @@ std::filesystem::path ProtoSchemaDb::FindDatabase() {
   return *FindProtoDbDirectory();
 }
 
-std::unique_ptr<ProtoSchemaDb> ProtoSchemaDb::LoadDatabase(std::filesystem::path protodb_dir) {
+std::unique_ptr<ProtoSchemaDb> ProtoSchemaDb::LoadDatabase(
+    std::filesystem::path protodb_dir) {
   auto protodb = std::make_unique<ProtoSchemaDb>(protodb_dir);
   protodb->_LoadDatabase(protodb_dir);
   return protodb;

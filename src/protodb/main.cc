@@ -21,4 +21,6 @@ int ProtodbMain(int argc, char* argv[]) {
 
 }  // namespace protodb
 
-int main(int argc, char* argv[]) { return ::protodb::ProtodbMain(argc, argv); }
+int main(int argc, char* argv[]) {
+  return ::protodb::ProtodbMain(argc, argv);
+}

@@ -230,7 +230,8 @@ std::unique_ptr<SimpleDescriptorDatabase>
 PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
   auto maybe_file_descriptor_set =
       ReadFileDescriptorSetFromFile(descriptor_set_name);
-  if (!maybe_file_descriptor_set) return nullptr;
+  if (!maybe_file_descriptor_set)
+    return nullptr;
   const auto& file_descriptor_set = *maybe_file_descriptor_set;
   return PopulateSingleSimpleDescriptorDatabase(file_descriptor_set);
 }
@@ -263,8 +264,8 @@ bool CommandLineInterface::ParseInputFiles(
   return result;
 }
 
-// std::string FindProtoSchemaDbLocation() { 
-//   return "./.protodb/"; 
+// std::string FindProtoSchemaDbLocation() {
+//   return "./.protodb/";
 // }
 
 bool CommandLineInterface::FindVirtualFileInProtoPath(
@@ -453,8 +454,7 @@ static bool FileExists(std::string_view path) {
 }
 
 bool CommandLineInterface::ProcessInputPaths(
-    std::vector<std::string> input_params,
-    CustomSourceTree* source_tree,
+    std::vector<std::string> input_params, CustomSourceTree* source_tree,
     DescriptorDatabase* fallback_database,
     std::vector<std::string>* virtual_files) {
   std::vector<InputPathFile> input_files;
@@ -656,7 +656,7 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
   } else if (command == "add") {
     if (parsed_files.size() > 0) {
       auto millis = absl::GetCurrentTimeNanos() / 1000 / 1000;
-      //std::string output_path =
+      // std::string output_path =
       //    absl::StrCat(protodb_path, "/added_", millis, ".pb");
       auto output_path = std::filesystem::path(protodb_path);
       output_path /= absl::StrCat("added_", millis, ".pb");

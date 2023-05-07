@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "google/protobuf/stubs/platform_macros.h"
-
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
 #include "absl/strings/match.h"
@@ -37,6 +35,7 @@
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "google/protobuf/stubs/platform_macros.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/db/protodb.h"

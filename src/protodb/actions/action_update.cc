@@ -63,7 +63,9 @@ using ::google::protobuf::io::Printer;
 struct BreakingChangeVisitor {
   Printer& printer;
 
-  auto WithIndent() { return printer.WithIndent(); }
+  auto WithIndent() {
+    return printer.WithIndent();
+  }
   bool operator()(const FileDescriptor* lhs, const FileDescriptor* rhs) {
     if (!lhs) {
       printer.Emit(absl::StrCat("+file ", rhs->name(), "\n"));
@@ -108,7 +110,8 @@ struct BreakingChangeVisitor {
       const bool name_match = lhs->name() == rhs->name();
       const bool number_match = lhs->number() == rhs->number();
       const bool mismatch = !name_match || !number_match;
-      printer.Emit(absl::StrCat("  ", lhs->name(), (mismatch ? " (mismatch)": ""), "\n"));
+      printer.Emit(absl::StrCat("  ", lhs->name(),
+                                (mismatch ? " (mismatch)" : ""), "\n"));
     }
     return true;
   }
@@ -123,7 +126,8 @@ struct BreakingChangeVisitor {
       const bool type_match = lhs->cpp_type() == rhs->cpp_type();
       const bool mismatch = !name_match || !number_match || !type_match;
       if (mismatch)
-        printer.Emit(absl::StrCat(" field ", lhs->name(), (mismatch ? "(mismatch)" : ""), "\n"));
+        printer.Emit(absl::StrCat(" field ", lhs->name(),
+                                  (mismatch ? "(mismatch)" : ""), "\n"));
     }
     return true;
   }
@@ -161,7 +165,7 @@ bool Update(const protodb::ProtoSchemaDb& protodb,
   FileOutputStream out(STDOUT_FILENO);
   Printer printer(&out, '$');
 
-  #if 0
+#if 0
   std::vector<const FileDescriptor*> protodb_files;
   std::vector<std::string> protodb_file_names;
   db->FindAllFileNames(&protodb_file_names);
@@ -176,7 +180,7 @@ bool Update(const protodb::ProtoSchemaDb& protodb,
   CompareOptions walk_options = CompareOptions::All();
   CompareDescriptors<BreakingChangeVisitor>(walk_options, protodb_files,
                                             parsed_files, visitor);
-  #endif
+#endif
 
   std::vector<const Descriptor*> protodb_messages;
   std::vector<std::string> protodb_message_names;
