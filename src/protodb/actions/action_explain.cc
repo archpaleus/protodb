@@ -585,7 +585,7 @@ std::string readFile(std::filesystem::path path) {
   return result;
 }
 
-bool Explain(const ProtoDb& protodb, const std::span<std::string>& params) {
+bool Explain(const ProtoSchemaDb& protodb, const std::span<std::string>& params) {
   std::string decode_type = "unset";
   if (params.size() >= 1) {
     decode_type = params[0];
@@ -597,7 +597,7 @@ bool Explain(const ProtoDb& protodb, const std::span<std::string>& params) {
     std::cerr << "no type specified" << std::endl;
     return false;
   }
-  auto db = protodb.database();
+  auto db = protodb.snapshot_database();
   ABSL_CHECK(db);
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);

@@ -301,15 +301,15 @@ static int ScoreMessageAgainstParsedFields(
   return score;
 }
 
-static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
+static bool Guess(const absl::Cord& data, const protodb::ProtoSchemaDb& protodb,
                   std::set<std::string>* matches) {
-  auto pool = std::make_unique<DescriptorPool>(protodb.database(), nullptr);
+  auto pool = std::make_unique<DescriptorPool>(protodb.snapshot_database(), nullptr);
 
   CordInputStream cord_input(&data);
   ZeroCopyInputStream* zcis = &cord_input;
   CodedInputStream cis(zcis);
 
-  GuessContext context{cis, &data, nullptr, pool.get(), protodb.database()};
+  GuessContext context{cis, &data, nullptr, pool.get(), protodb.snapshot_database()};
   cis.SetTotalBytesLimit(data.size());
   std::vector<ParsedField> fields;
   if (!ScanInputForFields(context, cis, fields)) {
@@ -327,7 +327,7 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
   for (const ParsedField& field : fields) field_ptrs.push_back(&field);
 
   std::vector<std::string> search_set;
-  protodb.database()->FindAllMessageNames(&search_set);
+  protodb.snapshot_database()->FindAllMessageNames(&search_set);
 
   std::vector<std::pair<int, std::string>> scores;
   for (std::string message : search_set) {
@@ -348,7 +348,7 @@ static bool Guess(const absl::Cord& data, const protodb::ProtoDb& protodb,
   return true;
 }
 
-bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args) {
+bool Guess(const protodb::ProtoSchemaDb& protodb, std::span<std::string> args) {
   absl::Cord cord;
   if (args.size() == 1) {
     std::cout << "Reading from " << args[0] << std::endl;

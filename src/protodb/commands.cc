@@ -263,7 +263,9 @@ bool CommandLineInterface::ParseInputFiles(
   return result;
 }
 
-std::string FindProtoDbLocation() { return "./.protodb/"; }
+// std::string FindProtoSchemaDbLocation() { 
+//   return "./.protodb/"; 
+// }
 
 bool CommandLineInterface::FindVirtualFileInProtoPath(
     CustomSourceTree* source_tree, std::string virtual_file,
@@ -451,14 +453,15 @@ static bool FileExists(std::string_view path) {
 }
 
 bool CommandLineInterface::ProcessInputPaths(
-    std::vector<std::string> input_params, CustomSourceTree* source_tree,
+    std::vector<std::string> input_params,
+    CustomSourceTree* source_tree,
     DescriptorDatabase* fallback_database,
     std::vector<std::string>* virtual_files) {
   std::vector<InputPathFile> input_files;
   std::vector<InputPathRoot> input_roots;
   std::vector<std::string> ambigous_input_files;
 
-  for (auto& input_param : input_params) {
+  for (const auto& input_param : input_params) {
     if (input_param.find("//") != std::string::npos) {
       std::vector<std::string_view> path_parts =
           absl::StrSplit(input_param, "//");
@@ -486,7 +489,7 @@ bool CommandLineInterface::ProcessInputPaths(
         // 1. Make sure the entire disk path exists
         if (!FileExists(input_param)) {
           std::cerr << "error: Unable to find: " << input_param << std::endl;
-          exit(1);  // TODO
+          exit(1);  // TODO: graceful exit?
         }
 
         const std::string disk_path =
@@ -574,9 +577,10 @@ bool CommandLineInterface::ProcessInputPaths(
 }
 
 int CommandLineInterface::Run(const CommandLineArgs& args) {
-  const std::string protodb_path = FindProtoDbLocation();
-  auto protodb = std::make_unique<ProtoDb>();
-  protodb->LoadDatabase(protodb_path);
+  const auto protodb_path = ProtoSchemaDb::FindDatabase();
+  std::cout << "ProtoDB location: " << protodb_path << std::endl;
+
+  auto protodb = ProtoSchemaDb::LoadDatabase(protodb_path);
 
   std::unique_ptr<ErrorPrinter> error_collector;
 
@@ -590,7 +594,7 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
   // Parse all of the input paths from the command line and add them
   // to the source tree.  All input files will have virtual path added
   // to virtual_input_files, which will then be parsed.
-  DescriptorDatabase* fallback_database = protodb->database();
+  DescriptorDatabase* fallback_database = protodb->snapshot_database();
   std::vector<std::string> virtual_input_files;
   if (!ProcessInputPaths(args.input_args, custom_source_tree.get(),
                          fallback_database, &virtual_input_files)) {
@@ -599,7 +603,7 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
   }
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
-      custom_source_tree.get(), protodb->database());
+      custom_source_tree.get(), protodb->snapshot_database());
   // source_tree_database->RecordErrorsTo(multi_file_error_collector.get());
 
   auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
@@ -631,8 +635,9 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
   } else if (command == "help") {
     PrintHelpText();
   } else if (command == "info") {
+    std::cout << "ProtoDB location: " << protodb->path() << std::endl;
     {
-      auto db = protodb->database();
+      auto db = protodb->snapshot_database();
       std::vector<std::string> message_names;
       db->FindAllMessageNames(&message_names);
       std::cout << message_names.size() << " message(s) in protodb"
@@ -651,8 +656,10 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
   } else if (command == "add") {
     if (parsed_files.size() > 0) {
       auto millis = absl::GetCurrentTimeNanos() / 1000 / 1000;
-      std::string output_path =
-          absl::StrCat(protodb_path, "/added_", millis, ".pb");
+      //std::string output_path =
+      //    absl::StrCat(protodb_path, "/added_", millis, ".pb");
+      auto output_path = std::filesystem::path(protodb_path);
+      output_path /= absl::StrCat("added_", millis, ".pb");
       const auto file_set = WriteFilesToDescriptorSet(true, parsed_files);
       WriteFileDescriptorSetToFile(file_set, output_path);
       std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to "

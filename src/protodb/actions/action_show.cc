@@ -160,9 +160,9 @@ struct ShowVisitor {
   }
 };
 
-bool Show(const protodb::ProtoDb& protodb,
+bool Show(const protodb::ProtoSchemaDb& protodb,
           const std::span<std::string>& params) {
-  auto db = protodb.database();
+  auto db = protodb.snapshot_database();
   ABSL_CHECK(db);
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);

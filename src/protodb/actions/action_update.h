@@ -11,9 +11,9 @@ namespace protodb {
 
 using ::google::protobuf::FileDescriptor;
 
-class ProtoDb;
+struct ProtoSchemaDb;
 
-bool Update(const ProtoDb& protodb,
+bool Update(const ProtoSchemaDb& protodb,
             const std::vector<const FileDescriptor*>& parsed_files,
             const std::span<std::string>& params);
 

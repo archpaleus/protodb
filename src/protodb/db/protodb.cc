@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
@@ -63,6 +64,55 @@ using ::google::protobuf::FileDescriptorProto;
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::SimpleDescriptorDatabase;
 
+static std::optional<std::filesystem::path> RecursiveFind(std::string_view filename,
+                          std::filesystem::path directory) {
+  if (directory.empty() || filename.empty()) {
+    return std::nullopt;
+  }
+
+  // Early exit if the directory doens't exist.
+  if (!std::filesystem::exists(directory)) {
+    return std::nullopt;
+  }
+  if (directory.is_relative()) {
+    directory = std::filesystem::absolute(directory);
+  }
+
+  auto path = directory;
+  path /= filename;
+  if (std::filesystem::exists(path)) {
+    return path;
+  }
+
+  if (directory == directory.parent_path()) {
+    return std::nullopt;
+  }
+
+  return RecursiveFind(filename, directory.parent_path());
+}
+
+static std::optional<std::filesystem::path> FindProtoDbDirectory() {
+  auto dir = RecursiveFind(".protodb", std::filesystem::current_path());
+  if (!dir.has_value()) {
+    return std::nullopt;
+  }
+  
+  if (!std::filesystem::is_directory(std::filesystem::path(*dir))) {
+    return std::nullopt;
+  }
+  return *dir;
+}
+
+std::filesystem::path ProtoSchemaDb::FindDatabase() {
+  return *FindProtoDbDirectory();
+}
+
+std::unique_ptr<ProtoSchemaDb> ProtoSchemaDb::LoadDatabase(std::filesystem::path protodb_dir) {
+  auto protodb = std::make_unique<ProtoSchemaDb>(protodb_dir);
+  protodb->_LoadDatabase(protodb_dir);
+  return protodb;
+}
+
 namespace {
 
 std::unique_ptr<SimpleDescriptorDatabase>
@@ -108,7 +158,7 @@ PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
 
 }  // anonymous namespace
 
-bool ProtoDb::LoadDatabase(const std::string& _path) {
+bool ProtoSchemaDb::_LoadDatabase(const std::string& _path) {
   protodb_path_ = std::filesystem::path{_path};
   if (std::filesystem::exists(protodb_path_)) {
     if (!std::filesystem::is_directory(protodb_path_)) {

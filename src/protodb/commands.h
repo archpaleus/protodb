@@ -20,7 +20,7 @@ using ::google::protobuf::DescriptorDatabase;
 using ::google::protobuf::DescriptorPool;
 using ::google::protobuf::FileDescriptor;
 
-class ProtoDb;
+struct ProtoSchemaDb;
 
 // The following two are equivalent when using a physical file path
 //   protodb add src//foo.proto

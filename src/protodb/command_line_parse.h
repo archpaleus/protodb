@@ -13,7 +13,7 @@ namespace protodb {
 using ::google::protobuf::DescriptorPool;
 using ::google::protobuf::FileDescriptor;
 
-class ProtoDb;
+struct ProtoSchemaDb;
 
 struct CommandLineArgs {
   std::vector<std::string> command_args;

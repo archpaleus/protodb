@@ -10,11 +10,7 @@
 #include <variant>
 #include <vector>
 
-#include "absl/container/btree_map.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
-#include "absl/strings/string_view.h"
-#include "google/protobuf/compiler/importer.h"
+//#include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"
@@ -26,13 +22,30 @@ using ::google::protobuf::DescriptorDatabase;
 using ::google::protobuf::MergedDescriptorDatabase;
 using ::google::protobuf::SimpleDescriptorDatabase;
 
-class ProtoDb {
- public:
-  bool LoadDatabase(const std::string& path);
+struct ProtoSchemaDb {
+  ProtoSchemaDb(const std::string& root)
+    : protodb_path_(root) {}
 
-  DescriptorDatabase* database() const { return merged_database_.get(); }
+  DescriptorDatabase* snapshot_database() const {
+     return merged_database_.get(); 
+  }
+  DescriptorDatabase* staging_database() const {
+     return merged_database_.get(); 
+  }
+  std::string path() {
+    return protodb_path_;
+  }
+
+  // Searches for a '.protodb' root from the current working directory.
+  static std::filesystem::path FindDatabase();
+
+  // Loads a '.protodb' database from teh given path.
+  static std::unique_ptr<ProtoSchemaDb> LoadDatabase(
+      std::filesystem::path protodb_path);
 
  protected:
+  bool _LoadDatabase(const std::string& _path);
+
   std::filesystem::path protodb_path_;
   std::vector<std::unique_ptr<SimpleDescriptorDatabase>>
       databases_per_descriptor_set_;

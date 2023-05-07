@@ -150,10 +150,10 @@ struct BreakingChangeVisitor {
   }
 };
 
-bool Update(const protodb::ProtoDb& protodb,
+bool Update(const protodb::ProtoSchemaDb& protodb,
             const std::vector<const FileDescriptor*>& parsed_files,
             const std::span<std::string>& params) {
-  auto db = protodb.database();
+  auto db = protodb.snapshot_database();
   ABSL_CHECK(db);
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);

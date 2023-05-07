@@ -6,9 +6,9 @@
 
 namespace protodb {
 
-class ProtoDb;
+struct ProtoSchemaDb;
 
-bool Explain(const ProtoDb& protodb, const std::span<std::string>& params);
+bool Explain(const ProtoSchemaDb& protodb, const std::span<std::string>& params);
 
 }  // namespace protodb
 

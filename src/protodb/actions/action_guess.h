@@ -23,7 +23,7 @@
 
 namespace protodb {
 
-bool Guess(const protodb::ProtoDb& protodb, std::span<std::string> args);
+bool Guess(const protodb::ProtoSchemaDb& protodb, std::span<std::string> args);
 
 }  // namespace protodb
 
