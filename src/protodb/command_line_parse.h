@@ -27,11 +27,22 @@ struct CommandLineArgs {
 // The following two are equivalent where the latter uses a virtual filepath
 //   protodb add src//foo.proto
 //   protodb add src// //foo.proto
-
+//
 // A .proto file can be virtual or physical.  In this case, both will be
 // searched and the physical file path will take precedence
 //   protodb add src// foo.proto
-
+//
+// Specifying `.` for the file component will indicate that the entire source
+// tree should be used.  This is equivalent to '**/*.proto'.
+//   protodb add .
+//   protodb add proto//.
+//   protodb add //proto/.
+//
+// A .proto file specified on the command line can be a reference to a
+// virtual file, a physical file, or both.  In this case, both will be
+// searched and the physical file path will take precedence
+//   protodb add src// foo.proto
+//
 // The .proto file to compile can be specified on the command line using either
 // its physical file path, or a virtual path relative to a directory specified
 // in --proto_path. For example, for src/foo.proto, the following two protoc
