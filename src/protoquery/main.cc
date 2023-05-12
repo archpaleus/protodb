@@ -3,7 +3,7 @@
 
 namespace protoquery {
 
-int ProtoqueryMain(int argc, char* argv[]) {
+int Main(int argc, char* argv[]) {
   absl::InitializeLog();
 
   // ABSL_LOG(INFO) << "start";
@@ -16,5 +16,5 @@ int ProtoqueryMain(int argc, char* argv[]) {
 }  // namespace protoquery
 
 int main(int argc, char* argv[]) {
-  return ::protoquery::ProtoqueryMain(argc, argv);
+  return ::protoquery::Main(argc, argv);
 }
