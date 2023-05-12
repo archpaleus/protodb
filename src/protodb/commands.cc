@@ -638,10 +638,12 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
     std::cout << "ProtoDB location: " << protodb->path() << std::endl;
     {
       auto db = protodb->snapshot_database();
-      std::vector<std::string> message_names;
-      db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in protodb"
-                << std::endl;
+      if (db) {
+        std::vector<std::string> message_names;
+        db->FindAllMessageNames(&message_names);
+        std::cout << message_names.size() << " message(s) in protodb"
+                  << std::endl;
+      }
     }
 
     {
