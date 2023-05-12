@@ -3,10 +3,32 @@ syntax = "proto3";
 package records;
 
 message Record {
+  // Length-prefixed data of the record.
   bytes data = 6;
-  fixed32 checksum = 7;
+  
+  // Optional CRC32 checksum.
+  fixed32 crc32 = 7;
 }
 
+// A record set contains a block of header information followed by a
+// repeated set of records.
+//
+// Log files can be continually appended by writing out a new RecordSet.
+//
+// The header should only be written once when the file is created.  
 message RecordSet {
+  reserved 1 to 4;
+  
+  message RecordSetHeader header = 131;
+  
   repeated Record record = 5;
+}
+
+
+message RecordSetHeader {
+  string name = 1;
+
+  string comment = 2;
+
+  google.protobuf.FileDescriptorSet descriptor_set = 3;
 }
