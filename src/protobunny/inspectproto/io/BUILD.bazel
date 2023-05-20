@@ -1,0 +1,50 @@
+cc_library(
+    name = "io",
+    deps = [
+        ":printer",
+        ":scanner",
+    ],
+)
+
+cc_library(
+    name = "scanner",
+    srcs = [
+        "mark.cc",
+        "parsing_scanner.cc",
+    ],
+    hdrs = [
+        "mark.h",
+        "parsing_scanner.h",
+        "scan_context.h",
+    ],
+    include_prefix = "protobunny/inspectproto/io",
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":printer",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+    ],
+)
+
+cc_library(
+    name = "printer",
+    srcs = [
+    ],
+    hdrs = [
+        "color_printer.h",
+        "printer.h",
+        "term_colors.h",
+    ],
+    include_prefix = "protobunny/inspectproto/io",
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/strings",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        #"@com_google_absl//absl/log:absl_log",
+        #"@com_google_absl//absl/strings:str_format",
+    ],
+)

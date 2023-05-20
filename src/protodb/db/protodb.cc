@@ -116,33 +116,35 @@ std::unique_ptr<ProtoSchemaDb> ProtoSchemaDb::LoadDatabase(
 
 namespace {
 
-std::unique_ptr<SimpleDescriptorDatabase>
-PopulateSingleSimpleDescriptorDatabase(const std::string& descriptor_set_name) {
+template <typename MessageType>
+std::optional<MessageType> ReadProtoFromFile(const std::string& filepath) {
   int fd;
   do {
-    fd = open(descriptor_set_name.c_str(), O_RDONLY | O_BINARY);
+    fd = open(filepath.c_str(), O_RDONLY | O_BINARY);
   } while (fd < 0 && errno == EINTR);
   if (fd < 0) {
-    std::cerr << descriptor_set_name << ": " << strerror(ENOENT) << std::endl;
-    return nullptr;
+    std::cerr << filepath << ": " << strerror(ENOENT) << std::endl;
+    return std::nullopt;
   }
 
-  FileDescriptorSet file_descriptor_set;
-  bool parsed = file_descriptor_set.ParseFromFileDescriptor(fd);
+  MessageType message;
+  bool parsed = message.ParseFromFileDescriptor(fd);
   if (close(fd) != 0) {
-    std::cerr << descriptor_set_name << ": close: " << strerror(errno)
-              << std::endl;
-    return nullptr;
+    std::cerr << filepath << ": close: " << strerror(errno) << std::endl;
+    return std::nullopt;
   }
-
   if (!parsed) {
-    std::cerr << descriptor_set_name << ": Unable to parse." << std::endl;
-    return nullptr;
+    std::cerr << filepath << ": parse failure " << std::endl;
+    return std::nullopt;
   }
 
+  return message;
+}
+
+std::unique_ptr<SimpleDescriptorDatabase> PopulateDescriptorDatabase(
+    const FileDescriptorSet& file_descriptor_set) {
   std::unique_ptr<SimpleDescriptorDatabase> database{
       new SimpleDescriptorDatabase()};
-
   for (int j = 0; j < file_descriptor_set.file_size(); j++) {
     FileDescriptorProto previously_added_file_descriptor_proto;
     if (database->FindFileByName(file_descriptor_set.file(j).name(),
@@ -172,14 +174,22 @@ bool ProtoSchemaDb::_LoadDatabase(const std::string& _path) {
           // Skip any files that start with period.
           continue;
         }
-        std::unique_ptr<SimpleDescriptorDatabase> database_for_descriptor_set =
-            PopulateSingleSimpleDescriptorDatabase(dir_entry.path());
-        if (!database_for_descriptor_set) {
-          std::cout << "error reading " << filename << std::endl;
-          return false;
+
+        auto file_descriptor_set =
+            ReadProtoFromFile<FileDescriptorSet>(dir_entry.path());
+        if (!file_descriptor_set) {
+          std::cerr << filename << ": Unable to load." << std::endl;
+          continue;
         }
-        databases_per_descriptor_set_.push_back(
-            std::move(database_for_descriptor_set));
+
+        auto simple_descriptor_database =
+            PopulateDescriptorDatabase(*file_descriptor_set);
+        if (simple_descriptor_database) {
+          std::cerr << "loaded " << filename << std::endl;
+
+          databases_per_descriptor_set_.push_back(
+              std::move(simple_descriptor_database));
+        }
       }
     }
   }
@@ -187,8 +197,7 @@ bool ProtoSchemaDb::_LoadDatabase(const std::string& _path) {
   std::vector<DescriptorDatabase*> raw_databases_per_descriptor_set;
   raw_databases_per_descriptor_set.reserve(
       databases_per_descriptor_set_.size());
-  for (const std::unique_ptr<SimpleDescriptorDatabase>& db :
-       databases_per_descriptor_set_) {
+  for (const auto& db : databases_per_descriptor_set_) {
     raw_databases_per_descriptor_set.push_back(db.get());
   }
   merged_database_.reset(
