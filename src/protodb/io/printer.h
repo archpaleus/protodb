@@ -21,7 +21,9 @@ struct Printer {
   // Emits text followed by a new line.
   virtual void EmitLine(std::string_view str) {}
 
-  void indent() { ++indent_; };
+  void indent() {
+    ++indent_;
+  };
   void outdent() {
     --indent_;
     assert(indent_ >= 0);
@@ -34,13 +36,19 @@ struct Printer {
 
   // RAII object to track indenting and unindenting.
   struct Indent {
-    Indent(Printer& printer) : p_(printer) { p_.indent(); }
-    ~Indent() { p_.outdent(); }
+    Indent(Printer& printer) : p_(printer) {
+      p_.indent();
+    }
+    ~Indent() {
+      p_.outdent();
+    }
 
    protected:
     Printer& p_;
   };
-  Indent WithIndent() { return Indent(*this); }
+  Indent WithIndent() {
+    return Indent(*this);
+  }
 
  protected:
   int indent_ = 0;

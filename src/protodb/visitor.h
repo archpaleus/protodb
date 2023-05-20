@@ -57,7 +57,9 @@ struct DescriptorVisitor {
   const WalkOptions& options;
   VisitFunctor visit_fn;
 
-  auto indent() { return visit_fn.WithIndent(); }
+  auto indent() {
+    return visit_fn.WithIndent();
+  }
 
   template <typename T>
   void Walk(std::map<std::string_view, T>& descriptor_map) {
