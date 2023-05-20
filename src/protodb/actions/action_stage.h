@@ -4,7 +4,7 @@
 #include <span>
 #include <string>
 
-namespace protodb 
+namespace protodb {
 
 struct ProtoSchemaDb;
 
