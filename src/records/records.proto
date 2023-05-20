@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package records;
 
+import "google/protobuf/descriptor.proto";
+
 message Record {
   // Length-prefixed data of the record.
   bytes data = 6;
@@ -19,7 +21,7 @@ message Record {
 message RecordSet {
   reserved 1 to 4;
   
-  message RecordSetHeader header = 131;
+  RecordSetHeader header = 131;
   
   repeated Record record = 5;
 }
