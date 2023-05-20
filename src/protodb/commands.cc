@@ -604,6 +604,7 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
 
   auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
       custom_source_tree.get(), protodb->snapshot_database());
+  // TODO(bholmes): hook up error collector
   // source_tree_database->RecordErrorsTo(multi_file_error_collector.get());
 
   auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
