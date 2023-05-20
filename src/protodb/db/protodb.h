@@ -23,14 +23,13 @@ using ::google::protobuf::MergedDescriptorDatabase;
 using ::google::protobuf::SimpleDescriptorDatabase;
 
 struct ProtoSchemaDb {
-  ProtoSchemaDb(const std::string& root)
-    : protodb_path_(root) {}
+  ProtoSchemaDb(const std::string& root) : protodb_path_(root) {}
 
   DescriptorDatabase* snapshot_database() const {
-     return merged_database_.get(); 
+    return merged_database_.get();
   }
   DescriptorDatabase* staging_database() const {
-     return merged_database_.get(); 
+    return merged_database_.get();
   }
   std::string path() {
     return protodb_path_;

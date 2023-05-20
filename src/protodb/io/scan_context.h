@@ -36,7 +36,8 @@ struct ScanContext {
         descriptor_pool(parent.descriptor_pool),
         descriptor_database(parent.descriptor_database),
         printer(parent.printer) {
-    if (printer) indent.emplace(printer->WithIndent());
+    if (printer)
+      indent.emplace(printer->WithIndent());
   }
 
   // required
