@@ -100,9 +100,13 @@ class ErrorPrinter : public MultiFileErrorCollector,
     AddErrorOrWarning(filename, -1, -1, message, "warning", std::clog);
   }
 
-  bool FoundErrors() const { return found_errors_; }
+  bool FoundErrors() const {
+    return found_errors_;
+  }
 
-  bool FoundWarnings() const { return found_warnings_; }
+  bool FoundWarnings() const {
+    return found_warnings_;
+  }
 
  private:
   void AddErrorOrWarning(absl::string_view filename, int line, int column,
