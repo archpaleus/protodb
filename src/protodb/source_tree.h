@@ -62,7 +62,9 @@ struct InputPathFile {
   // The original input path provided, for debugging.
   const std::string input_path;
 
-  std::string ToString() const { return input_path; }
+  std::string ToString() const {
+    return input_path;
+  }
 };
 
 // Represents an on-disk path that should be used for searching for
@@ -77,7 +79,10 @@ struct InputPathRoot {
   //   --proto_path=virtual/file.proto=ondisk/file.proto
   const std::string virtual_path;
 
-  std::string ToString() const { return disk_path; }
+  std::string ToString() const {
+    // Always display the disk path.
+    return disk_path;
+  }
 };
 
 // An implementation of SourceTree which loads files from locations on disk.
