@@ -129,12 +129,14 @@ std::string BinToHex(absl::Cord bytes, unsigned maxlen = UINT32_MAX) {
   return BinToHex(bytes.Flatten(), maxlen);
 }
 
+// Describes a segment of the wire data we are scanning.
 struct ExplainSegment {
   const uint32_t start;
   const uint32_t length;
   const absl::Cord snippet;
 };
 
+// Describes a protobuf tag.
 struct Tag {
   const ExplainSegment segment;
   const uint32_t tag;

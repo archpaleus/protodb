@@ -8,7 +8,8 @@ namespace protodb {
 
 struct ProtoSchemaDb;
 
-bool Explain(const ProtoSchemaDb& protodb, const std::span<std::string>& params);
+bool Explain(const ProtoSchemaDb& protodb,
+             const std::span<std::string>& params);
 
 }  // namespace protodb
 
