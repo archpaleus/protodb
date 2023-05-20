@@ -3,3 +3,13 @@ alias(
   name = "protodb",
   actual = "//src/protodb"
 )
+
+alias(
+  name = "inspectproto",
+  actual = "//src/protobunny/inspectproto"
+)
+
+alias(
+  name = "queryproto",
+  actual = "//src/protobunny/queryproto"
+)

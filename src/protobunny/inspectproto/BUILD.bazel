@@ -1,8 +1,15 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_library(
     name = "inspectproto_lib",
+    srcs = [
+        "command_line_parser.cc",
+    ],
+    hdrs = [
+        "command_line_parser.h",
+    ],
+    include_prefix = "protobunny/inspectproto",
+    strip_include_prefix = "",
     deps = [
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:initialize",
