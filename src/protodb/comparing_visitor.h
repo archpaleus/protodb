@@ -86,7 +86,9 @@ struct ComparingDescriptorVisitor {
       }
     }
   }
-  auto indent() { return visit_fn.WithIndent(); }
+  auto indent() {
+    return visit_fn.WithIndent();
+  }
 
   void Compare(const FieldDescriptor* lhs, const FieldDescriptor* rhs) {
     if (options.fields) {
@@ -97,7 +99,8 @@ struct ComparingDescriptorVisitor {
   void Compare(const EnumDescriptor* lhs, const EnumDescriptor* rhs) {
     std::optional<decltype(indent())> with_indent;
     if (options.enums) {
-      if (!visit_fn(lhs, rhs)) return;
+      if (!visit_fn(lhs, rhs))
+        return;
       with_indent.emplace(indent());
 
       std::map<std::string_view, const EnumValueDescriptor*> lhs_values;
@@ -307,11 +310,10 @@ void CompareDescriptors(
 // The visitor does not need to handle all possible node types. Types that are
 // not visitable via `visitor` will be ignored.
 template <typename VisitFunctor>
-void CompareDescriptors(
-    const CompareOptions& walk_options,
-    const std::vector<const Descriptor*>& lhs_descriptors,
-    const std::vector<const Descriptor*>& rhs_descriptors,
-    VisitFunctor visit_fn) {
+void CompareDescriptors(const CompareOptions& walk_options,
+                        const std::vector<const Descriptor*>& lhs_descriptors,
+                        const std::vector<const Descriptor*>& rhs_descriptors,
+                        VisitFunctor visit_fn) {
   struct CompleteVisitFunctor : VisitFunctor {
     using VisitFunctor::operator();
     explicit CompleteVisitFunctor(VisitFunctor visit_fn)
