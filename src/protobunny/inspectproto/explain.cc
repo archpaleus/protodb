@@ -398,7 +398,8 @@ std::optional<Tag> ReadTag(const ExplainContext& context,
   }
 
   // Look for the field in the descriptor.  Failure here is not terminal.
-  auto* field_descriptor = descriptor->FindFieldByNumber(field_number);
+  auto* field_descriptor =
+       descriptor ? descriptor->FindFieldByNumber(field_number) : nullptr;
   return Tag{
       .segment = tag_segment,
       .tag = tag,

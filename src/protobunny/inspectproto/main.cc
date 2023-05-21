@@ -210,8 +210,18 @@ int Main(int argc, char* argv[]) {
                 << std::endl;
     }
   }
-
   ImportProtoFilesToSimpleDatabase(simpledb.get(), maybe_args->inputs);
+
+  // If we didn't load a definition for Empty then just create one.
+  std::vector<std::string> message_names;
+  simpledb->FindAllMessageNames(&message_names);
+  FileDescriptorProto empty;
+  if (absl::c_find(message_names, "google.protobuf.Empty") ==
+      message_names.end()) {
+    empty.set_name("__empty_message__.proto");
+    empty.add_message_type()->set_name("__EmptyMessage__");
+    simpledb->Add(empty);
+  }
 
   // Read the input data.
   absl::Cord data;
