@@ -178,11 +178,13 @@ struct ExplainPrinter : public Printer {
                                     field.segment.snippet.TryFlat().value());
     std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
               << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]")
-              << " " << indent_spacing();
+              << " " << WireTypeLetter(tag.wire_type) << " "
+              << indent_spacing();
     std::cout << termcolors::kBold << termcolors::kCyan;
     std::cout << std::setw(4) << tag.field_number;
     std::cout << termcolors::kReset << " : ";
 
+    const bool is_packed = tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
     if (field.is_valid_message) {
       if (!field.cpp_type.empty()) {
         std::cout << field.cpp_type << " ";
@@ -204,7 +206,15 @@ struct ExplainPrinter : public Printer {
         std::cout << "  (" << field.chunk_segment->length << " bytes)";
       }
       std::cout << termcolors::kReset;
-    } else if (field.is_valid_ascii) {
+    } else if (is_packed) {
+      if (!field.cpp_type.empty()) {
+        std::cout << field.cpp_type << " ";
+        std::cout << termcolors::kReset;
+      }
+      std::cout << termcolors::kYellow << field.name << termcolors::kReset
+                << " = [" << termcolors::kGreen << field.value
+                << termcolors::kReset << "]";
+    } else if (tag.wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
       if (!field.cpp_type.empty()) {
         std::cout << field.cpp_type << " ";
         std::cout << termcolors::kReset;
@@ -390,39 +400,46 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
 
   if (tag.field_descriptor) {
     const auto field_type = tag.field_descriptor->type();
+    const bool is_packed = tag.field_descriptor->is_packed();
     if (field_type == FieldDescriptor::TYPE_MESSAGE) {
       return Field{
           .segment = length_segment,
           .chunk_segment = chunk_segment,
-          .cpp_type = field_descriptor ? field_descriptor->cpp_type_name()
-                                       : WireTypeLetter(tag.wire_type),
-          .message_type = (std::string)(
-              field_descriptor ? field_descriptor->message_type()->name()
-                               : "??"),
+          .cpp_type =  field_descriptor->cpp_type_name(),
+          .message_type = (std::string)( field_descriptor->message_type()->name()),
           .name = field_descriptor ? field_descriptor->name() : "",
           .is_valid_message = true,
       };
     } else if (field_type == FieldDescriptor::TYPE_STRING ||
                field_type == FieldDescriptor::TYPE_BYTES) {
-      return Field{
-          .segment = length_segment,
-          .chunk_segment = chunk_segment,
-          .cpp_type = field_descriptor ? field_descriptor->cpp_type_name()
-                                       : WireTypeLetter(tag.wire_type),
-          .name = field_descriptor ? field_descriptor->name() : "",
-          .value = (std::string)chunk_segment.snippet,
-          .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
-      };
+        return Field{
+            .segment = length_segment,
+            .chunk_segment = chunk_segment,
+            .cpp_type = field_descriptor->cpp_type_name(),
+            .name = field_descriptor->name(),
+            .value = (std::string)chunk_segment.snippet,
+            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
+        };
     } else {
-      return Field{
-          .segment = length_segment,
-          .chunk_segment = chunk_segment,
-          .cpp_type = field_descriptor ? field_descriptor->cpp_type_name()
-                                       : WireTypeLetter(tag.wire_type),
-          .name = field_descriptor ? field_descriptor->name() : "",
-          .value = (std::string)chunk_segment.snippet,
-          .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
-      };
+      if (is_packed) {
+        return Field{
+            .segment = length_segment,
+            .chunk_segment = chunk_segment,
+            .cpp_type = absl::StrCat(field_descriptor->cpp_type_name(), "[]"),
+            .name = field_descriptor->name(),
+            .value = (std::string)BinToHex(chunk_segment.snippet),
+            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
+        };
+      } else {
+        return Field{
+            .segment = length_segment,
+            .chunk_segment = chunk_segment,
+            .cpp_type = field_descriptor->cpp_type_name(),
+            .name = field_descriptor->name(),
+            .value = (std::string)chunk_segment.snippet,
+            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
+        };
+      }
     }
   }
 
@@ -498,7 +515,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
   const FieldDescriptor* field_descriptor = tag.field_descriptor;
   return Field{
       .segment = field_mark.segment(),
-      .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
+      .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "?",
       .name = field_descriptor ? field_descriptor->name() : "<fixed64>",
       .value = absl::StrCat(
           fixed64),  // TODO: provide different interpretations: double
