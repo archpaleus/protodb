@@ -5,11 +5,13 @@ cc_library(
     srcs = [
         "common.cc",
         "command_line_parser.cc",
+        "guess.cc",
         "explain.cc",
     ],
     hdrs = [
         "common.h",
         "command_line_parser.h",
+        "guess.h",
         "explain.h",
     ],
     include_prefix = "protobunny/inspectproto",

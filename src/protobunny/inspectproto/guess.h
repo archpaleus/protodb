@@ -1,5 +1,5 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
-#define PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
+#ifndef PROTOBUNNY_INSPECTPROTO_GUESS_H__
+#define PROTOBUNNY_INSPECTPROTO_GUESS_H__
 
 #include <span>
 #include <string>
@@ -11,9 +11,9 @@ namespace protobunny::inspectproto {
 
 using ::google::protobuf::DescriptorDatabase;
 
-bool Explain(const absl::Cord& cord, DescriptorDatabase* db,
-             std::string decode_type);
+bool Guess(const absl::Cord& data, DescriptorDatabase* descriptor_db,
+           std::vector<std::string>* matches);
 
 }  // namespace protobunny::inspectproto
 
-#endif  // PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
+#endif  // PROTOBUNNY_INSPECTPROTO_GUESS_H__

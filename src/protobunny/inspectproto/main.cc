@@ -22,10 +22,12 @@
 #include "protobunny/inspectproto/command_line_parser.h"
 #include "protobunny/inspectproto/common.h"
 #include "protobunny/inspectproto/explain.h"
+#include "protobunny/inspectproto/guess.h"
 
 namespace protobunny::inspectproto {
 
 using namespace google::protobuf;
+using namespace google::protobuf::io;
 
 using google::protobuf::FileDescriptorSet;
 
@@ -65,10 +67,22 @@ int Main(int argc, char* argv[]) {
     return -2;
   }
 
+  absl::Cord data;
+  std::cerr << "Reading from stdin" << std::endl;
+  FileInputStream in(STDIN_FILENO);
+  in.ReadCord(&data, 10 << 20);
+
   auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
 
   google::protobuf::DescriptorDatabase* db = simpledb.get();
-  Explain(db);
+
+  std::vector<std::string> matches;
+  Guess(data, simpledb.get(), &matches);
+
+  std::string decode_type = "google.protobuf.Empty";
+  if (!matches.empty())
+    decode_type = matches[0];
+  Explain(data, simpledb.get(), decode_type);
 
   return 0;
 }

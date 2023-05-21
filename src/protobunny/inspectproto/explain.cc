@@ -30,7 +30,6 @@
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/io/coded_stream.h"
-#include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
@@ -640,22 +639,11 @@ std::string readFile(std::filesystem::path path) {
   return result;
 }
 
-bool ExplainCommand(DescriptorDatabase* protodb,
-                    const std::span<std::string>& params) {
-  std::string decode_type = "unset";
-  if (params.size() >= 1) {
-    decode_type = params[0];
-  } else {
-    decode_type = "google.protobuf.Empty";
-  }
-  decode_type = "google.protobuf.FileDescriptorSet";
-
-  if (decode_type.empty()) {
-    std::cerr << "no type specified" << std::endl;
-    return false;
-  }
-  auto db = protodb;
+bool Explain(const absl::Cord& cord, DescriptorDatabase* db,
+             std::string decode_type) {
+  ABSL_CHECK(!decode_type.empty());
   ABSL_CHECK(db);
+
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);
   const auto* descriptor =
@@ -663,11 +651,6 @@ bool ExplainCommand(DescriptorDatabase* protodb,
   if (!descriptor) {
     return false;
   }
-
-  absl::Cord cord;
-  std::cerr << "Reading from stdin" << std::endl;
-  FileInputStream in(STDIN_FILENO);
-  in.ReadCord(&cord, 10 << 20);
 
   CordInputStream cord_input(&cord);
   CodedInputStream cis(&cord_input);
@@ -678,11 +661,6 @@ bool ExplainCommand(DescriptorDatabase* protodb,
                               nullptr);
 
   return ScanFields(scan_context, descriptor);
-}
-
-bool Explain(DescriptorDatabase* protodb) {
-  ExplainCommand(protodb, {});
-  return false;
 }
 
 }  // namespace protobunny::inspectproto
