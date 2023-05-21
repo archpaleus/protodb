@@ -658,11 +658,9 @@ int CommandLineInterface::Run(const CommandLineArgs& args) {
     }
   } else if (command == "add") {
     if (parsed_files.size() > 0) {
-      auto millis = absl::GetCurrentTimeNanos() / 1000 / 1000;
-      // std::string output_path =
-      //    absl::StrCat(protodb_path, "/added_", millis, ".pb");
+      const auto seconds = absl::GetCurrentTimeNanos() / 1000 / 1000;
       auto output_path = std::filesystem::path(protodb_path);
-      output_path /= absl::StrCat("added_", millis, ".pb");
+      output_path /= absl::StrCat("added_", seconds, ".pb");
       const auto file_set = WriteFilesToDescriptorSet(true, parsed_files);
       WriteFileDescriptorSetToFile(file_set, output_path);
       std::cout << "Wrote " << parsed_files.size() << " descriptor(s) to "
