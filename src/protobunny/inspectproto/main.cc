@@ -53,21 +53,20 @@ int Main(int argc, char* argv[]) {
   CommandLineParser parser;
   auto maybe_args = parser.ParseArguments(argc, argv);
   if (!maybe_args) {
-    std::cerr << "no args" << std::endl;
+    std::cerr << "Failed to parse command-line args" << std::endl;
     return -1;
   }
 
+  // TODO: load from command line param --descriptor_set_in
   constexpr auto filepath = "descriptor-set.bin";
   FileDescriptorSet descriptor_set;
   if (!ParseProtoFromFile(filepath, &descriptor_set)) {
-    std::cerr << "not ok" << std::endl;
+    std::cerr << "Failed to parse " << filepath << std::endl;
     return -2;
   }
 
-  std::cerr << "ok" << std::endl;
   auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
 
-  std::cerr << "ok" << std::endl;
   google::protobuf::DescriptorDatabase* db = simpledb.get();
   Explain(db);
 

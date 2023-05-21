@@ -160,7 +160,7 @@ struct Field {
 
   // True if the data portion is non-zero in size and
   // all characters are ASCII printable.
-  bool is_valid_ascii = false;
+  bool _is_valid_ascii = false;
 
   // True if the data portion is non-zero in size and is valid UTF-8.
   // bool is_valid_ut8 = false;  // TODO
@@ -173,6 +173,31 @@ struct ExplainPrinter : public Printer {
   }
   virtual ~ExplainPrinter() {}
 
+  std::string PrintableChar(char c) {
+    switch (c) {
+      case '\r':
+        return "\\r";
+      case '\n':
+        return "\\n";
+      case '\t':
+        return "\\t";
+      case '\f':
+        return "\\f";
+      case '\b':
+        return "\\b";
+    }
+    if (isprint(c))
+      return std::string(1, c);
+    return absl::StrCat("\\x", absl::Hex(c, absl::kZeroPad2));
+  }
+  std::string PrintableString(std::string_view input) {
+    std::stringstream ss;
+    for (char c : input) {
+      ss << PrintableChar(c);
+    }
+    return ss.str();
+  }
+
   void Emit(const Tag& tag, const Field& field) {
     std::string data = absl::StrCat(tag.segment.snippet.TryFlat().value(),
                                     field.segment.snippet.TryFlat().value());
@@ -184,7 +209,8 @@ struct ExplainPrinter : public Printer {
     std::cout << std::setw(4) << tag.field_number;
     std::cout << termcolors::kReset << " : ";
 
-    const bool is_packed = tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
+    const bool is_packed =
+        tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
     if (field.is_valid_message) {
       if (!field.cpp_type.empty()) {
         std::cout << field.cpp_type << " ";
@@ -219,10 +245,17 @@ struct ExplainPrinter : public Printer {
         std::cout << field.cpp_type << " ";
         std::cout << termcolors::kReset;
       }
+      std::string printable_str = PrintableString(field.value);
       std::cout << termcolors::kYellow << field.name << termcolors::kReset
                 << " = "
-                << "\"" << termcolors::kGreen << field.value
-                << termcolors::kReset << "\"";
+                << "\"" << termcolors::kGreen;
+      constexpr auto kMaxLen = 60;
+      if (printable_str.length() > kMaxLen) {
+        std::cout << printable_str.substr(0, kMaxLen - 3) << termcolors::kReset
+                  << "...\"";
+      } else {
+        std::cout << printable_str << termcolors::kReset << "\"";
+      }
     } else {
       if (!field.cpp_type.empty()) {
         std::cout << field.cpp_type << " ";
@@ -405,21 +438,20 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
       return Field{
           .segment = length_segment,
           .chunk_segment = chunk_segment,
-          .cpp_type =  field_descriptor->cpp_type_name(),
-          .message_type = (std::string)( field_descriptor->message_type()->name()),
+          .cpp_type = field_descriptor->cpp_type_name(),
+          .message_type = field_descriptor->message_type()->name(),
           .name = field_descriptor ? field_descriptor->name() : "",
           .is_valid_message = true,
       };
     } else if (field_type == FieldDescriptor::TYPE_STRING ||
                field_type == FieldDescriptor::TYPE_BYTES) {
-        return Field{
-            .segment = length_segment,
-            .chunk_segment = chunk_segment,
-            .cpp_type = field_descriptor->cpp_type_name(),
-            .name = field_descriptor->name(),
-            .value = (std::string)chunk_segment.snippet,
-            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
-        };
+      return Field{
+          .segment = length_segment,
+          .chunk_segment = chunk_segment,
+          .cpp_type = field_descriptor->cpp_type_name(),
+          .name = field_descriptor->name(),
+          .value = (std::string)chunk_segment.snippet,
+      };
     } else {
       if (is_packed) {
         return Field{
@@ -428,7 +460,6 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
             .cpp_type = absl::StrCat(field_descriptor->cpp_type_name(), "[]"),
             .name = field_descriptor->name(),
             .value = (std::string)BinToHex(chunk_segment.snippet),
-            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
         };
       } else {
         return Field{
@@ -437,7 +468,6 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
             .cpp_type = field_descriptor->cpp_type_name(),
             .name = field_descriptor->name(),
             .value = (std::string)chunk_segment.snippet,
-            .is_valid_ascii = IsAsciiPrintable(chunk_segment.snippet),
         };
       }
     }
@@ -460,7 +490,6 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
         .name = is_ascii_printable ? "<string>" : "<bytes>",
         .value = (is_ascii_printable ? (std::string)chunk_segment.snippet
                                      : BinToHex(chunk_segment.snippet, 12)),
-        .is_valid_ascii = is_ascii_printable,
     };
   }
 }

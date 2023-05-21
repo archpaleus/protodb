@@ -588,7 +588,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
   return true;
 }
 
-std::string readFile(std::filesystem::path path) {
+std::string ReadFile(std::filesystem::path path) {
   std::ifstream f(path, std::ios::in | std::ios::binary);
   const auto sz = std::filesystem::file_size(path);
 
