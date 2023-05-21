@@ -1,0 +1,18 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "common",
+    srcs = [
+        "source_tree.cc",
+    ],
+    hdrs = [
+        "source_tree.h",
+    ],
+    include_prefix = "protobunny/common",
+    strip_include_prefix = "",
+    deps = [
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:initialize",
+        "@com_google_protobuf//src/google/protobuf/compiler:importer",
+    ],
+)

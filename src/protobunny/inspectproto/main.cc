@@ -23,6 +23,7 @@
 #include "protobunny/inspectproto/common.h"
 #include "protobunny/inspectproto/explain.h"
 #include "protobunny/inspectproto/guess.h"
+#include "protobunny/inspectproto/importer.h"
 
 namespace protobunny::inspectproto {
 
@@ -31,22 +32,108 @@ using namespace google::protobuf::io;
 
 using google::protobuf::FileDescriptorSet;
 
-auto PopulateSingleSimpleDescriptorDatabase(
-    const FileDescriptorSet& file_descriptor_set)
-    -> std::unique_ptr<SimpleDescriptorDatabase> {
-  auto database = std::make_unique<SimpleDescriptorDatabase>();
+void AddDescriptorSetToSimpleDescriptorDatabase(
+    SimpleDescriptorDatabase* database,
+    const FileDescriptorSet& file_descriptor_set) {
   for (int j = 0; j < file_descriptor_set.file_size(); j++) {
-    FileDescriptorProto previously_added_file_descriptor_proto;
-    if (database->FindFileByName(file_descriptor_set.file(j).name(),
-                                 &previously_added_file_descriptor_proto)) {
+    const auto& name = file_descriptor_set.file(j).name();
+    FileDescriptorProto previously_added_file_descriptor;
+    if (database->FindFileByName(name, &previously_added_file_descriptor)) {
       // already present - skip
       continue;
     }
     if (!database->Add(file_descriptor_set.file(j))) {
-      return nullptr;
+      std::cerr << "Unable to add " << name << std::endl;
     }
   }
-  return database;
+}
+
+void AddDescriptorsToSimpleDescriptorDatabase(
+    SimpleDescriptorDatabase* database,
+    std::vector<const FileDescriptor*> file_descriptors) {
+  for (const FileDescriptor* file_descriptor : file_descriptors) {
+    const auto& name = file_descriptor->name();
+    FileDescriptorProto previously_added_file_descriptor;
+    if (database->FindFileByName(name, &previously_added_file_descriptor)) {
+      std::cerr << "warning: skiping previously added file: " << name
+                << std::endl;
+      continue;
+    }
+    FileDescriptorProto file_descriptor_proto;
+    file_descriptor->CopyTo(&file_descriptor_proto);
+    if (!database->Add(file_descriptor_proto)) {
+      std::cerr << "Unable to add " << name << std::endl;
+    }
+  }
+}
+
+bool ParseInputFiles(std::vector<std::string> input_files,
+                     DescriptorPool* descriptor_pool,
+                     std::vector<const FileDescriptor*>* parsed_files) {
+  for (const auto& input_file : input_files) {
+    descriptor_pool->AddUnusedImportTrackFile(input_file);
+  }
+
+  bool result = true;
+  for (const auto& input_file : input_files) {
+    // Import the file via the DescriptorPool.
+    const FileDescriptor* parsed_file =
+        descriptor_pool->FindFileByName(input_file);
+    if (parsed_file == nullptr) {
+      ABSL_LOG(WARNING) << __FUNCTION__
+                        << ": unable to load file descriptor for " << input_file
+                        << std::endl;
+      result = false;
+      break;
+    }
+    parsed_files->push_back(parsed_file);
+  }
+  descriptor_pool->ClearUnusedImportTrackFiles();
+
+  return result;
+}
+
+bool ImportProtoFilesToSimpleDatabase(
+    SimpleDescriptorDatabase* database,
+    const std::vector<std::string>& input_paths) {
+  auto custom_source_tree = std::make_unique<CustomSourceTree>();
+  std::unique_ptr<ErrorPrinter> error_collector;
+  error_collector.reset(new ErrorPrinter(custom_source_tree.get()));
+
+  // Add paths relative to the protoc executable to find the
+  // well-known types.
+  // AddDefaultProtoPaths(custom_source_tree.get());
+
+  std::vector<std::string> virtual_input_files;
+  if (!ProcessInputPaths(input_paths, custom_source_tree.get(), database,
+                         &virtual_input_files)) {
+    std::cerr << "Failed to parse input params" << std::endl;
+    return -6;
+  }
+
+  auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
+      custom_source_tree.get(), database);
+  auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
+      source_tree_database.get(),
+      source_tree_database->GetValidationErrorCollector());
+
+  std::vector<const FileDescriptor*> parsed_files;
+  if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(),
+                       &parsed_files)) {
+    ABSL_LOG(FATAL) << " couldn't parse input files";
+    return -7;
+  }
+  AddDescriptorsToSimpleDescriptorDatabase(database, parsed_files);
+
+  {
+    auto db = database;
+    if (db) {
+      std::vector<std::string> message_names;
+      db->FindAllMessageNames(&message_names);
+      std::cout << message_names.size() << " message(s) in source tree db"
+                << std::endl;
+    }
+  }
 }
 
 struct Options {
@@ -86,6 +173,16 @@ int Main(int argc, char* argv[]) {
         std::cerr << "Invalid input for skip: " << param.second << std::endl;
         return -4;
       }
+    } else if (param.first == "--proto_path" || param.first == "-I") {
+      std::string path = param.second;
+      std::vector<std::string_view> paths =
+          absl::StrSplit(param.second, absl::MaxSplits("=", 1));
+      if (paths.size() == 1) {
+        path = absl::StripSuffix(path, "/");
+        maybe_args->inputs.push_back(path + "//");
+      } else {
+        // TODO(bholmes): We dont' yet support mapped paths.
+      }
     } else {
       std::cerr << "Unknown param: " << param.first << std::endl;
       return -5;
@@ -93,16 +190,28 @@ int Main(int argc, char* argv[]) {
   }
 
   // Load our descriptor sets.
-  if (options.descriptor_set_in_paths.empty()) {
-    options.descriptor_set_in_paths.push_back("descriptor-set.bin");
-  }
   FileDescriptorSet descriptor_set;
-  const auto filepath = options.descriptor_set_in_paths[0];
-  if (!ParseProtoFromFile(filepath, &descriptor_set)) {
-    std::cerr << "Failed to parse " << filepath << std::endl;
-    return -2;
+  if (!options.descriptor_set_in_paths.empty()) {
+    const auto filepath = options.descriptor_set_in_paths[0];
+    if (!ParseProtoFromFile(filepath, &descriptor_set)) {
+      std::cerr << "Failed to parse " << filepath << std::endl;
+      return -2;
+    }
   }
-  auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
+
+  auto simpledb = std::make_unique<SimpleDescriptorDatabase>();
+  AddDescriptorSetToSimpleDescriptorDatabase(simpledb.get(), descriptor_set);
+  {
+    auto db = simpledb.get();
+    if (db) {
+      std::vector<std::string> message_names;
+      db->FindAllMessageNames(&message_names);
+      std::cout << message_names.size() << " message(s) in descriptor input"
+                << std::endl;
+    }
+  }
+
+  ImportProtoFilesToSimpleDatabase(simpledb.get(), maybe_args->inputs);
 
   // Read the input data.
   absl::Cord data;

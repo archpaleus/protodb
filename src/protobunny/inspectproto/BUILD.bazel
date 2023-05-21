@@ -3,24 +3,27 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 cc_library(
     name = "inspectproto_lib",
     srcs = [
-        "common.cc",
         "command_line_parser.cc",
-        "guess.cc",
+        "common.cc",
         "explain.cc",
+        "guess.cc",
+        "importer.cc",
     ],
     hdrs = [
-        "common.h",
         "command_line_parser.h",
-        "guess.h",
+        "common.h",
         "explain.h",
+        "guess.h",
+        "importer.h",
     ],
     include_prefix = "protobunny/inspectproto",
     strip_include_prefix = "",
     deps = [
+        "//src/protobunny/common",
+        "//src/protobunny/inspectproto/io",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:initialize",
         "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
-        "//src/protobunny/inspectproto/io",
     ],
 )
 
