@@ -53,6 +53,7 @@ struct Options {
   std::string input_filepath = "/dev/stdin";
   std::string decode_type;
   std::vector<std::string> descriptor_set_in_paths;
+  int skip_bytes = 0;
 };
 
 int Main(int argc, char* argv[]) {
@@ -80,6 +81,11 @@ int Main(int argc, char* argv[]) {
       options.decode_type = param.second;
     } else if (param.first == "-f" || param.first == "--file") {
       options.input_filepath = param.second;
+    } else if (param.first == "--skip") {
+      if (!absl::SimpleAtoi(param.second, &options.skip_bytes)) {
+        std::cerr << "Invalid input for skip: " << param.second << std::endl;
+        return -4;
+      }
     } else {
       std::cerr << "Unknown param: " << param.first << std::endl;
       return -5;
@@ -100,7 +106,7 @@ int Main(int argc, char* argv[]) {
 
   // Read the input data.
   absl::Cord data;
-  std::cerr << "Reading from " << options.input_filepath << std::endl;
+  std::cout << "Reading from " << options.input_filepath << std::endl;
   auto fp = fopen(options.input_filepath.c_str(), "rb");
   if (!fp) {
     std::cerr << "error: unable to open file " << options.input_filepath
@@ -109,6 +115,7 @@ int Main(int argc, char* argv[]) {
   }
   int fd = fileno(fp);
   FileInputStream in(fd);
+  in.Skip(options.skip_bytes);
   in.ReadCord(&data, 10 << 20);
   fclose(fp);
 
