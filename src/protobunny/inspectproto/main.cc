@@ -50,6 +50,7 @@ auto PopulateSingleSimpleDescriptorDatabase(
 }
 
 struct Options {
+  std::string input_filepath = "/dev/stdin";
   std::string decode_type;
   std::vector<std::string> descriptor_set_in_paths;
 };
@@ -57,6 +58,7 @@ struct Options {
 int Main(int argc, char* argv[]) {
   absl::InitializeLog();
 
+  // Parse the arugments given from the command line.
   CommandLineParser parser;
   auto maybe_args = parser.ParseArguments(argc, argv);
   if (!maybe_args) {
@@ -64,9 +66,10 @@ int Main(int argc, char* argv[]) {
     return -1;
   }
 
+  // Process the parsed command-line parameters.
   Options options;
   for (const CommandLineParam& param : maybe_args->params) {
-    if (param.first == "--descriptor_set_in" || param.first == "-i") {
+    if (param.first == "--descriptor_set_in") {
       constexpr auto kPathSeparator = ",";
       std::vector<std::string_view> paths =
           absl::StrSplit(param.second, kPathSeparator);
@@ -75,9 +78,15 @@ int Main(int argc, char* argv[]) {
       }
     } else if (param.first == "--decode_type") {
       options.decode_type = param.second;
+    } else if (param.first == "-f" || param.first == "--file") {
+      options.input_filepath = param.second;
+    } else {
+      std::cerr << "Unknown param: " << param.first << std::endl;
+      return -5;
     }
   }
 
+  // Load our descriptor sets.
   if (options.descriptor_set_in_paths.empty()) {
     options.descriptor_set_in_paths.push_back("descriptor-set.bin");
   }
@@ -89,12 +98,21 @@ int Main(int argc, char* argv[]) {
   }
   auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
 
+  // Read the input data.
   absl::Cord data;
-  std::cerr << "Reading from stdin" << std::endl;
-  FileInputStream in(STDIN_FILENO);
+  std::cerr << "Reading from " << options.input_filepath << std::endl;
+  auto fp = fopen(options.input_filepath.c_str(), "rb");
+  if (!fp) {
+    std::cerr << "error: unable to open file " << options.input_filepath
+              << std::endl;
+    return false;
+  }
+  int fd = fileno(fp);
+  FileInputStream in(fd);
   in.ReadCord(&data, 10 << 20);
+  fclose(fp);
 
-
+  // If no decode type was given, try to guess one.
   if (options.decode_type.empty()) {
     std::vector<std::string> matches;
     Guess(data, simpledb.get(), &matches);
@@ -105,6 +123,7 @@ int Main(int argc, char* argv[]) {
     }
   }
 
+  // Explain the input data.
   Explain(data, simpledb.get(), options.decode_type);
 
   return 0;
