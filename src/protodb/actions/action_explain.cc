@@ -633,6 +633,7 @@ bool Explain(const ProtoSchemaDb& protodb,
     int fd = fileno(fp);
     FileInputStream in(fd);
     in.ReadCord(&cord, 10 << 20);
+    fclose(fp);
   } else {
     std::cerr << "Reading from stdin" << std::endl;
     FileInputStream in(STDIN_FILENO);
