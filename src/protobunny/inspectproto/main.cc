@@ -49,6 +49,11 @@ auto PopulateSingleSimpleDescriptorDatabase(
   return database;
 }
 
+struct Options {
+  std::string decode_type;
+  std::vector<std::string> descriptor_set_in_paths;
+};
+
 int Main(int argc, char* argv[]) {
   absl::InitializeLog();
 
@@ -59,30 +64,48 @@ int Main(int argc, char* argv[]) {
     return -1;
   }
 
-  // TODO: load from command line param --descriptor_set_in
-  constexpr auto filepath = "descriptor-set.bin";
+  Options options;
+  for (const CommandLineParam& param : maybe_args->params) {
+    if (param.first == "--descriptor_set_in" || param.first == "-i") {
+      constexpr auto kPathSeparator = ",";
+      std::vector<std::string_view> paths =
+          absl::StrSplit(param.second, kPathSeparator);
+      for (const auto& path : paths) {
+        options.descriptor_set_in_paths.push_back(std::string(path));
+      }
+    } else if (param.first == "--decode_type") {
+      options.decode_type = param.second;
+    }
+  }
+
+  if (options.descriptor_set_in_paths.empty()) {
+    options.descriptor_set_in_paths.push_back("descriptor-set.bin");
+  }
   FileDescriptorSet descriptor_set;
+  const auto filepath = options.descriptor_set_in_paths[0];
   if (!ParseProtoFromFile(filepath, &descriptor_set)) {
     std::cerr << "Failed to parse " << filepath << std::endl;
     return -2;
   }
+  auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
 
   absl::Cord data;
   std::cerr << "Reading from stdin" << std::endl;
   FileInputStream in(STDIN_FILENO);
   in.ReadCord(&data, 10 << 20);
 
-  auto simpledb = PopulateSingleSimpleDescriptorDatabase(descriptor_set);
 
-  google::protobuf::DescriptorDatabase* db = simpledb.get();
+  if (options.decode_type.empty()) {
+    std::vector<std::string> matches;
+    Guess(data, simpledb.get(), &matches);
+    if (matches.empty()) {
+      options.decode_type = "google.protobuf.Empty";
+    } else {
+      options.decode_type = matches[0];
+    }
+  }
 
-  std::vector<std::string> matches;
-  Guess(data, simpledb.get(), &matches);
-
-  std::string decode_type = "google.protobuf.Empty";
-  if (!matches.empty())
-    decode_type = matches[0];
-  Explain(data, simpledb.get(), decode_type);
+  Explain(data, simpledb.get(), options.decode_type);
 
   return 0;
 }
