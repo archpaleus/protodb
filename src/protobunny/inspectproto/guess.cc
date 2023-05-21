@@ -347,7 +347,6 @@ bool Guess(const absl::Cord& data, DescriptorDatabase* descriptor_db,
     absl::c_sort(scores);
     auto& [score, message] = *scores.rbegin();
     matches->push_back(message);
-    std::cout << message << std::endl;
   }
 
   return true;

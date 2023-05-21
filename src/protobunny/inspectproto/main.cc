@@ -106,7 +106,7 @@ int Main(int argc, char* argv[]) {
 
   // Read the input data.
   absl::Cord data;
-  std::cout << "Reading from " << options.input_filepath << std::endl;
+  std::cout << "Reading input from " << options.input_filepath << std::endl;
   auto fp = fopen(options.input_filepath.c_str(), "rb");
   if (!fp) {
     std::cerr << "error: unable to open file " << options.input_filepath
@@ -127,10 +127,12 @@ int Main(int argc, char* argv[]) {
       options.decode_type = "google.protobuf.Empty";
     } else {
       options.decode_type = matches[0];
+      std::cout << "Guessed proto as " << options.decode_type << std::endl;
     }
   }
 
   // Explain the input data.
+  std::cout << std::endl;
   Explain(data, simpledb.get(), options.decode_type);
 
   return 0;
