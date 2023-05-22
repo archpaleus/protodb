@@ -156,7 +156,9 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
                              .input_path = input_file});
 
     } else {
-      ABSL_LOG(FATAL) << " can't find file: " << input_file;
+        std::cerr << "error: Unable to find file: " << input_file
+                    << std::endl;
+        exit(-23);
     }
   }
 

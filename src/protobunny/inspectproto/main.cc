@@ -124,16 +124,6 @@ bool ImportProtoFilesToSimpleDatabase(
     return -7;
   }
   AddDescriptorsToSimpleDescriptorDatabase(database, parsed_files);
-
-  {
-    auto db = database;
-    if (db) {
-      std::vector<std::string> message_names;
-      db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in source tree db"
-                << std::endl;
-    }
-  }
 }
 
 struct Options {
@@ -189,7 +179,15 @@ int Main(int argc, char* argv[]) {
     }
   }
 
-  // Load our descriptor sets.
+  auto simpledb = std::make_unique<SimpleDescriptorDatabase>();
+  // Add an empty proto definition.
+  // This is the default decode type that we'll use when none is specified.
+  FileDescriptorProto empty;
+  empty.set_name("__empty_message__.proto");
+  empty.add_message_type()->set_name("__EmptyMessage__");
+  simpledb->Add(empty);
+
+  // Load any descriptors sets specified from the command line.
   FileDescriptorSet descriptor_set;
   if (!options.descriptor_set_in_paths.empty()) {
     const auto filepath = options.descriptor_set_in_paths[0];
@@ -199,29 +197,10 @@ int Main(int argc, char* argv[]) {
     }
   }
 
-  auto simpledb = std::make_unique<SimpleDescriptorDatabase>();
   AddDescriptorSetToSimpleDescriptorDatabase(simpledb.get(), descriptor_set);
-  {
-    auto db = simpledb.get();
-    if (db) {
-      std::vector<std::string> message_names;
-      db->FindAllMessageNames(&message_names);
-      std::cout << message_names.size() << " message(s) in descriptor input"
-                << std::endl;
-    }
-  }
+  
+  // Load any .proto files given from the command line.
   ImportProtoFilesToSimpleDatabase(simpledb.get(), maybe_args->inputs);
-
-  // If we didn't load a definition for Empty then just create one.
-  std::vector<std::string> message_names;
-  simpledb->FindAllMessageNames(&message_names);
-  FileDescriptorProto empty;
-  if (absl::c_find(message_names, "google.protobuf.Empty") ==
-      message_names.end()) {
-    empty.set_name("__empty_message__.proto");
-    empty.add_message_type()->set_name("__EmptyMessage__");
-    simpledb->Add(empty);
-  }
 
   // Read the input data.
   absl::Cord data;
