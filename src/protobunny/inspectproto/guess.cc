@@ -229,14 +229,17 @@ static int ScoreMessageAgainstGroup(const GuessContext& context,
   }
   score += 2;
 
-  if (group.is_repeated == field_descriptor->is_repeated()) {
-    score += 5;
-  } else {
-    // Field isn't repeated in descriptor.  There are legitimate cases
-    // where this might pop up so we don't dock too many points for this.
-    score -= 2;
-    if (context.strict_matching)
-      return score;
+  if (group.is_repeated) {
+    if (field_descriptor->is_repeated()) {
+      score += 3;
+    } else {
+      // Field isn't repeated in descriptor.  There are legitimate cases
+      // where this might pop up so we don't dock too many points for this.
+      score -= 1;
+      if (context.strict_matching) {
+        return score;
+      }
+    }
   }
 
   auto field_type =
