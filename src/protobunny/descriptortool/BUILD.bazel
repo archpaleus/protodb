@@ -1,0 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+cc_library(
+    name = "descriptortool_lib",
+    deps = [
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:initialize",
+        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+    ],
+)
+
+cc_binary(
+    name = "descriptortool",
+    srcs = ["main.cc"],
+    deps = [":descriptortool_lib"],
+)
