@@ -10,7 +10,7 @@ the wire, keeping overhead minimal, especially when compared to a
 `google.protobuf.Any` message, which is typically
 more than 40 bytes to specify the message type.
 
-In total a 'protoid.Any` message has an overhead of 6-11 bytes on top of
+In total a `protoid.Any` message has an overhead of 6-11 bytes on top of
 the serialized message.
 
 ```
@@ -25,8 +25,8 @@ message MyMessage {
 }
 ```
 
-
 # Using a simplified Any proto
+
 ```
 package protoid;
 message Any {
@@ -48,7 +48,7 @@ message Any {
   # Binary encoding data of the serialized message.
   bytes message = 7;
 
-  # An optional typename for the message, eg "google.protobuf.Empty".  
+  # An optional typename for the message, eg "google.protobuf.Empty".
   # Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
@@ -66,15 +66,14 @@ protoid_any: {
 }
 ```
 
-
-Using an AnySet with a repeated field, we can easily write out a large number of 
+Using an AnySet with a repeated field, we can easily write out a large number of
 Any objects, which can be easily concatenated together and read later.
+
 ```
 message AnySet {
   repeated Any = 3;
 }
 ```
-
 
 ```
 message AnyArray {
@@ -94,7 +93,7 @@ message AnyArray {
   # Binary encoding data of the serialized messages.
   repeated bytes message = 7;
 
-  # An optional typename for the message, eg "google.protobuf.Empty".  
+  # An optional typename for the message, eg "google.protobuf.Empty".
   # Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
@@ -103,7 +102,7 @@ message AnyArray {
 ```
 # Variant should remain identical to `Any` in wire-format.
 # Variants are annotated in the schema to limit to a specific
-# set of protos that can serialized for the proto.  
+# set of protos that can serialized for the proto.
 # Parsing is less restrictive and will deserialize to any type
 # that can be found in the mapping.
 message Variant {
@@ -121,10 +120,12 @@ message Variant {
   # Binary encoding data of the serialized message.
   bytes message = 7;
 
-  # An optional typename for the message, eg "google.protobuf.Empty".  
+  # An optional typename for the message, eg "google.protobuf.Empty".
   # Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
+
+```
 
 ```
 extend FieldOptions {
@@ -135,10 +136,10 @@ extend FieldOptions {
 ```
 message MyMessage {
   Variant my_field = 1 [(protoid.variants) = {
-      type: "google.protobuf.FloatValue"
-      type: "google.protobuf.BoolValue"
-      type: "google.protobuf.Int32Value"
-      type: "google.protobuf.Int64Value"
+    type: "google.protobuf.FloatValue"
+    type: "google.protobuf.BoolValue"
+    type: "google.protobuf.Int32Value"
+    type: "google.protobuf.Int64Value"
   }];
 }
 ```
@@ -162,7 +163,7 @@ auto message = ProtoId::Variant<MyMessage, my_field>::Unpack(data.my_field);
 auto message = ProtoId::Variant::Unpack(data, my_field);
 
 // Unpack to a Message.  If the message is not the right type then unpacking will fail.
-bool ok = variant.Unpack(data, my_field, &message);  
+bool ok = variant.Unpack(data, my_field, &message);
 
 // Given a std::variant<> with types matching data.myprotos we can
 // repack it to the field.
@@ -171,7 +172,7 @@ variant.Pack(message, &data.myprotos);
 
 # Variant Implementation for C++
 
-``
+```
 // From the type we can get the descriptor
 const Descriptor* d = MyMessage::descriptor()
 int field = MyMessage::kTextFieldNumber;
@@ -199,6 +200,9 @@ using my_field = VariantField<
 }
 ```
 
+
+```
 class Any {
 
 }
+```
