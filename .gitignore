@@ -12,3 +12,8 @@
 
 # Vim
 .*.swp
+
+# Binary-encoded Protobuf Files
+*.bin
+*.pb
+*.binproto
