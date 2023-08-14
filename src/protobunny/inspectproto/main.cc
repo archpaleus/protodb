@@ -140,7 +140,7 @@ int Main(int argc, char* argv[]) {
   CommandLineParser parser;
   auto maybe_args = parser.ParseArguments(argc, argv);
   if (!maybe_args) {
-    std::cerr << "Failed to parse command-line args" << std::endl;
+    std::cerr << "error: Failed to parse command-line args" << std::endl;
     return -1;
   }
 
@@ -212,6 +212,10 @@ int Main(int argc, char* argv[]) {
     return false;
   }
   int fd = fileno(fp);
+  if (isatty(fd)) {
+    std::cerr << "error: cannot read from TTY" << std::endl;
+    return false;
+  }
   FileInputStream in(fd);
   in.Skip(options.skip_bytes);
   in.ReadCord(&data, 10 << 20);
