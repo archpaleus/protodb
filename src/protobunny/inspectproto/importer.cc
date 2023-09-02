@@ -143,7 +143,8 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
         case CustomSourceTree::CANNOT_OPEN:
           ABSL_LOG(FATAL) << "CANNOT_OPEN";
         case CustomSourceTree::NO_MAPPING:
-          ABSL_LOG(INFO) << "NO_MAPPING : " << input_file << "," << virtual_file << "," << shadowing_disk_file;
+          ABSL_LOG(INFO) << "NO_MAPPING : " << input_file << "," << virtual_file
+                         << "," << shadowing_disk_file;
         default:
           ABSL_LOG(WARNING) << "Do something";
       }
@@ -156,9 +157,8 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
                              .input_path = input_file});
 
     } else {
-        std::cerr << "error: Unable to find file: " << input_file
-                    << std::endl;
-        exit(-23);
+      std::cerr << "error: Unable to find file: " << input_file << std::endl;
+      exit(-23);
     }
   }
 

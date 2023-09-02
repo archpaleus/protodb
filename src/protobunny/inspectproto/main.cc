@@ -138,9 +138,11 @@ void PrintHelp() {
   std::cerr << "Usage:" << std::endl;
   std::cerr << "  inspectproto [[ARGS]] [[.proto files]]" << std::endl;
   std::cerr << " -f: input file to read, defaults to /dev/stdin" << std::endl;
-  std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data" << std::endl;
+  std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data"
+            << std::endl;
   std::cerr << " -g: guess the type of the binary message" << std::endl;
-  std::cerr << " -G: don't guess the protobuf type of the binary message" << std::endl;
+  std::cerr << " -G: don't guess the protobuf type of the binary message"
+            << std::endl;
 }
 
 int Main(int argc, char* argv[]) {
@@ -217,7 +219,7 @@ int Main(int argc, char* argv[]) {
   }
 
   AddDescriptorSetToSimpleDescriptorDatabase(simpledb.get(), descriptor_set);
-  
+
   // Load any .proto files given from the command line.
   ImportProtoFilesToSimpleDatabase(simpledb.get(), maybe_args->inputs);
 
