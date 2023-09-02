@@ -68,7 +68,7 @@ cat mypb.binproto | inspectproto 0036..00135
 ...
 ```
 
-A sub-messages contents can be extracted and written to a separate file.  
+A sub-messages contents can be extracted and written to a separate file.
 This will write out the 255 bytes shown in previous examples to a separate file
 named `descriptor.proto`.
 
@@ -81,10 +81,13 @@ cat mypb.binproto | inspectproto extract 0036 >descriptor.binproto
 * extract the field data, exclusive for run-length delimited size
   - when a message field is extracted we can read that data again using that
     message type; this is the most common use case.
+
 * extract the tag-field combo and write it to the output.
   - this data will not be parsable unless there is a defined type that "wraps" this data.
     for example: FileDescriptorSet wraps a repeated FileDescriptorProto so we can
     extract a FileDescriptorProto and read it as FileDescriptorSet.
+  - this is generally not practical, and if someone needs to do this they are
+    probably better of using jq
 
 If skip invalid is given, then the scan will continue until the first valid data is found.
 Note that most random data can actually parse as valid. Given a message type we can easily check if the
