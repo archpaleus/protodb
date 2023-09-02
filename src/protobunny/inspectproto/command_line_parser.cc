@@ -1,9 +1,5 @@
 #include "protobunny/inspectproto/command_line_parser.h"
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <array>
 #include <filesystem>
 #include <fstream>
@@ -18,12 +14,6 @@
 #include "absl/strings/str_split.h"
 
 namespace protobunny::inspectproto {
-
-static const char* const kPathSeparator = ",";
-
-CommandLineParser::CommandLineParser() {}
-
-CommandLineParser::~CommandLineParser() {}
 
 static bool ExpandArgumentFile(const std::string& file,
                                std::vector<std::string>* arguments) {
@@ -131,6 +121,7 @@ absl::StatusOr<ArgPair> ParseNext(std::span<std::string>& argview) {
 
 std::optional<CommandLineArgs> CommandLineParser::ParseArguments(
     int argc, const char* const argv[]) {
+  // Expand all argument files to gather all arguments before parsing.
   std::vector<std::string> arguments;
   for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '@') {
@@ -144,26 +135,30 @@ std::optional<CommandLineArgs> CommandLineParser::ParseArguments(
     }
   }
 
-  std::vector<CommandLineParam> params;
-  std::vector<std::string> inputs;
+  CommandLineArgs args;
+
   auto argview = std::span{arguments};
   while (!argview.empty()) {
-    auto argpair_or = ParseNext(argview);
+    const auto argpair_or = ParseNext(argview);
     if (!argpair_or.ok()) {
       std::cerr << argpair_or.status().message() << std::endl;
       return std::nullopt;
     }
+
     const auto& argpair = *argpair_or;
     if (argpair.first.empty()) {
-      inputs.push_back(std::string(argpair.second));
+      // If there the first part of the pair is empty, this is just
+      // an input path, eg 'google/proto/descriptor.proto'.
+      args.inputs.push_back(std::string(argpair.second));
     } else {
-      params.push_back(
+      // If both are set in the pair then this is an arg, eg '--help'
+      // or '-I=here/'.
+      args.params.push_back(
           {std::string(argpair.first), std::string(argpair.second)});
     }
   }
 
-  return CommandLineArgs{.params = std::move(params),
-                         .inputs = std::move(inputs)};
+  return args;
 }
 
 }  // namespace protobunny::inspectproto

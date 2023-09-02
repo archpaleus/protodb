@@ -133,8 +133,27 @@ struct Options {
   int skip_bytes = 0;
 };
 
+void PrintHelp() {
+  std::cerr << "error: No input provided." << std::endl;
+  std::cerr << "Usage:" << std::endl;
+  std::cerr << "  inspectproto [[ARGS]] [[.proto files]]" << std::endl;
+  std::cerr << " -f: input file to read, defaults to /dev/stdin" << std::endl;
+  std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data" << std::endl;
+  std::cerr << " -g: guess the type of the binary message" << std::endl;
+  std::cerr << " -G: don't guess the protobuf type of the binary message" << std::endl;
+}
+
 int Main(int argc, char* argv[]) {
   absl::InitializeLog();
+
+  // If there are no arugments provided and stdin is connected to the terminal
+  // then show help text.
+  if (argc <= 1) {
+    if (isatty(STDIN_FILENO)) {
+      PrintHelp();
+      return 0;
+    }
+  }
 
   // Parse the arugments given from the command line.
   CommandLineParser parser;

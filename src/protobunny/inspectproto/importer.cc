@@ -143,7 +143,7 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
         case CustomSourceTree::CANNOT_OPEN:
           ABSL_LOG(FATAL) << "CANNOT_OPEN";
         case CustomSourceTree::NO_MAPPING:
-          ABSL_LOG(FATAL) << "NO_MAPPING";
+          ABSL_LOG(INFO) << "NO_MAPPING : " << input_file << "," << virtual_file << "," << shadowing_disk_file;
         default:
           ABSL_LOG(WARNING) << "Do something";
       }

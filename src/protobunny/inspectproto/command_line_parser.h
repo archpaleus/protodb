@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "protobunny/inspectproto/common.h"
 
 namespace protobunny::inspectproto {
 
@@ -48,24 +49,14 @@ struct CommandLineArgs {
 //
 // If a file path can be interpreted both as a physical file path and as a
 // relative virtual path, the physical file path takes precedence.
-struct CommandLineParser {
+struct CommandLineParser : NoCopy {
   static const char* const kPathSeparator;
-
-  CommandLineParser();
-  CommandLineParser(const CommandLineParser&) = delete;
-  CommandLineParser& operator=(const CommandLineParser&) = delete;
-  ~CommandLineParser();
-
-  // Return status for ParseArguments()
-  enum ParseArgumentStatus {
-    PARSE_ARGUMENT_DONE_AND_CONTINUE,
-    PARSE_ARGUMENT_DONE_AND_EXIT,
-    PARSE_ARGUMENT_FAIL
-  };
 
   // Parse all command-line arguments from argv.
   std::optional<CommandLineArgs> ParseArguments(int argc,
                                                 const char* const argv[]);
+
+  const std::vector<std::string_view>& SplitInputs(std::string_view);
 };
 
 }  // namespace protobunny::inspectproto

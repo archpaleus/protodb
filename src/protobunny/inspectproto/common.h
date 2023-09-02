@@ -9,6 +9,16 @@
 
 namespace protobunny::inspectproto {
 
+struct NoCopy {
+  NoCopy() = default;
+  NoCopy(const NoCopy&) = delete;
+};
+
+struct NoMove {
+  NoMove() = default;
+  NoMove(NoMove&&) noexcept = delete;
+};
+
 bool IsAsciiPrintable(std::string_view str);
 bool IsAsciiPrintable(absl::Cord str);
 
