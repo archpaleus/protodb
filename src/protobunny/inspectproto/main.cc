@@ -133,15 +133,20 @@ struct Options {
   int skip_bytes = 0;
 };
 
-void PrintHelp() {
-  std::cerr << "error: No input provided." << std::endl;
+void PrintUsage() {
+  std::cerr << "inspectproto    - a tool for viewing binary-encoded Protocol "
+               "Buffers data"
+            << std::endl;
+  std::cerr << std::endl;
   std::cerr << "Usage:" << std::endl;
   std::cerr << "  inspectproto [[ARGS]] [[.proto files]]" << std::endl;
-  std::cerr << std::endl;
+}
+
+void PrintHelp() {
   std::cerr << " -f: input file to read, defaults to /dev/stdin" << std::endl;
   std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data"
             << std::endl;
-  std::cerr << " --decode_type: decode  using the given message type"
+  std::cerr << " --decode_type: decode using the given message type"
             << std::endl;
   std::cerr << " -G: don't guess the type of the binary message when the type "
             << std::endl;
@@ -157,7 +162,9 @@ int Main(int argc, char* argv[]) {
   // then show help text.
   if (argc <= 1) {
     if (isatty(STDIN_FILENO)) {
-      PrintHelp();
+      std::cerr << "error: No input provided." << std::endl;
+      std::cerr << std::endl;
+      PrintUsage();
       return 0;
     }
   }
@@ -173,7 +180,12 @@ int Main(int argc, char* argv[]) {
   // Process the parsed command-line parameters.
   Options options;
   for (const CommandLineParam& param : maybe_args->params) {
-    if (param.first == "--descriptor_set_in") {
+    if (param.first == "-h" || param.first == "--help") {
+      PrintUsage();
+      std::cerr << std::endl;
+      PrintHelp();
+      return 0;
+    } else if (param.first == "--descriptor_set_in") {
       constexpr auto kPathSeparator = ",";
       std::vector<std::string_view> paths =
           absl::StrSplit(param.second, kPathSeparator);
@@ -198,6 +210,8 @@ int Main(int argc, char* argv[]) {
         maybe_args->inputs.push_back(path + "//");
       } else {
         // TODO(bholmes): We dont' yet support mapped paths.
+        LOG(FATAL) << "Mapped paths are not supported yet: " << path[0]
+                   << " -> " << path[1];
       }
     } else {
       std::cerr << "Unknown param: " << param.first << std::endl;

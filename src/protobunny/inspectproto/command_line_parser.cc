@@ -78,7 +78,7 @@ absl::StatusOr<ArgPair> ParseNext(std::span<std::string>& argview) {
       } else {
         if (argview.empty()) {
           return absl::InvalidArgumentError(
-              absl::StrCat("No argument for ", name));
+              absl::StrCat("unknown option: ", name));
         }
         return std::make_pair(name,
                               std::string_view{*pop_front(argview).value()});
