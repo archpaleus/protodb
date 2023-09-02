@@ -137,11 +137,16 @@ void PrintHelp() {
   std::cerr << "error: No input provided." << std::endl;
   std::cerr << "Usage:" << std::endl;
   std::cerr << "  inspectproto [[ARGS]] [[.proto files]]" << std::endl;
+  std::cerr << std::endl;
   std::cerr << " -f: input file to read, defaults to /dev/stdin" << std::endl;
   std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data"
             << std::endl;
-  std::cerr << " -g: guess the type of the binary message" << std::endl;
-  std::cerr << " -G: don't guess the protobuf type of the binary message"
+  std::cerr << " --decode_type: decode  using the given message type"
+            << std::endl;
+  std::cerr << " -G: don't guess the type of the binary message when the type "
+            << std::endl;
+  std::cerr << "     is not specified" << std::endl;
+  std::cerr << " -I,--proto_path: specifies a directory to search for imports"
             << std::endl;
 }
 
