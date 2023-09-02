@@ -210,8 +210,8 @@ int Main(int argc, char* argv[]) {
         maybe_args->inputs.push_back(path + "//");
       } else {
         // TODO(bholmes): We dont' yet support mapped paths.
-        LOG(FATAL) << "Mapped paths are not supported yet: " << path[0]
-                   << " -> " << path[1];
+        LOG(FATAL) << "Mapped paths are not supported yet; mapping " << paths[0]
+                   << " -> " << paths[1];
       }
     } else {
       std::cerr << "Unknown param: " << param.first << std::endl;
