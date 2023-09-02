@@ -161,6 +161,41 @@ to some very unexpected behaviors.
 inspectproto !myproto.db  # UNEXPECTED!
 ```
 
+### Available command line options
+
+There is a dizzying number of custom shell parsing and expansion options for users to understand.  Additionally, zsh has many more options for pattern matching compared to bash.
+
+Valid unintepreted command line parameters
+```
+echo $ a$
+echo [ ] ]]
+echo ^ ^^ ^a ^1 ^- ^+ ^@ ^= ^^ ^% ^$ ^!
+echo @ @@ @a @1 @- @+ @@ @= @^ @% @$ @!
+echo % %% %a %1 %- %+ %@ %= %^ %% %$ %!
+echo + ++ +a +1 +- ++ +@ += +^ +% +$ +!
+echo - -- -a -1 -- -+ -@ -= -^ -% -$ -!
+echo : :: :a :1 :- :+ :@ := :^ :% :$ :!
+```
+It can be tricky and dangerous to use operators that are commonly used in shell
+expansions, such as ! and $.  While they are safe on their own, a simple typo that
+causes them to merge with anohter character can dramatically change the meaning of
+command executed by the shell.
+
+Interpreted command line parameters
+```
+# Any letter following a [ is considered part of an escape sequence. Brackets
+# are interpreted within a string unless escaped
+echo [a [[ [! [@ a[
+
+# Dollar sign precedes environment variable expansion, even when within a string.
+# All of the following are interpreted by the shell.
+echo $$ $1 a$1 a$@
+
+Anything following an equal sign is interpreted as a unmodified file.
+echo = == =a =1 =- =+ =@ == =^ =%
+```
+
+
 # Final thoughts
 
 - descriptortool should only work on descriptor sets -- no .proto files; mixing cases is a bit too confusing
