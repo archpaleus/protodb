@@ -24,13 +24,16 @@
 #include "protobunny/inspectproto/explain.h"
 #include "protobunny/inspectproto/guess.h"
 #include "protobunny/inspectproto/importer.h"
+#include "protobunny/inspectproto/io/console.h"
 
 namespace protobunny::inspectproto {
 
 using namespace google::protobuf;
 using namespace google::protobuf::io;
 
+using absl::StrCat;
 using google::protobuf::FileDescriptorSet;
+using protobunny::inspectproto::io::Console;
 
 void AddDescriptorSetToSimpleDescriptorDatabase(
     SimpleDescriptorDatabase* database,
@@ -131,40 +134,41 @@ struct Options {
   std::string decode_type;
   std::vector<std::string> descriptor_set_in_paths;
   int skip_bytes = 0;
+  bool plain = false;
 };
 
-void PrintUsage() {
-  std::cerr << "inspectproto    - a tool for viewing binary-encoded Protocol "
-               "Buffers data"
-            << std::endl;
-  std::cerr << std::endl;
-  std::cerr << "Usage:" << std::endl;
-  std::cerr << "  inspectproto [[ARGS]] [[.proto files]]" << std::endl;
+void PrintUsage(Console& c) {
+  c.print("inspectproto  - a tool for viewing binary-encoded Protocol Buffers");
+  c.print("");
+  c.print("Usage:");
+  c.print("  inspectproto ARGS [[.proto files]]");
 }
 
 void PrintHelp() {
-  std::cerr << " -f: input file to read, defaults to /dev/stdin" << std::endl;
-  std::cerr << " -i,--descriptor_set_in: descriptor sets to describe data"
+  std::cerr << "Arguments:" << std::endl;
+  std::cerr << "  -f: input file to read, defaults to /dev/stdin" << std::endl;
+  std::cerr << "  -i,--descriptor_set_in: descriptor sets to describe data"
             << std::endl;
-  std::cerr << " --decode_type: decode using the given message type"
-            << std::endl;
-  std::cerr << " -G: don't guess the type of the binary message when the type "
+  std::cerr << "  --decode_type: decode using the given message type"
             << std::endl;
   std::cerr << "     is not specified" << std::endl;
-  std::cerr << " -I,--proto_path: specifies a directory to search for imports"
+  std::cerr << "  -I,--proto_path: specifies a directory to search for imports"
             << std::endl;
+  std::cerr << "  --plain: disable ANSI escape sequences in output" << std::endl;
 }
 
 int Main(int argc, char* argv[]) {
   absl::InitializeLog();
 
+  io::Console console;
+
   // If there are no arugments provided and stdin is connected to the terminal
   // then show help text.
   if (argc <= 1) {
     if (isatty(STDIN_FILENO)) {
-      std::cerr << "error: No input provided." << std::endl;
+      console.error("No input provided.");
       std::cerr << std::endl;
-      PrintUsage();
+      PrintUsage(console);
       return 0;
     }
   }
@@ -181,11 +185,13 @@ int Main(int argc, char* argv[]) {
   Options options;
   for (const CommandLineParam& param : maybe_args->params) {
     if (param.first == "-h" || param.first == "--help") {
-      PrintUsage();
+      PrintUsage(console);
       std::cerr << std::endl;
       PrintHelp();
       return 0;
-    } else if (param.first == "--descriptor_set_in") {
+    } else if (param.first == "-v" || param.first == "--verbose") {
+      console.verbose_ = true;
+    } else if (param.first == "-i" || param.first == "--descriptor_set_in") {
       constexpr auto kPathSeparator = ",";
       std::vector<std::string_view> paths =
           absl::StrSplit(param.second, kPathSeparator);
@@ -244,7 +250,7 @@ int Main(int argc, char* argv[]) {
 
   // Read the input data.
   absl::Cord data;
-  std::cout << "Reading input from " << options.input_filepath << std::endl;
+  console.info(StrCat("Reading input from ", options.input_filepath));
   auto fp = fopen(options.input_filepath.c_str(), "rb");
   if (!fp) {
     std::cerr << "error: unable to open file " << options.input_filepath
@@ -269,7 +275,7 @@ int Main(int argc, char* argv[]) {
       options.decode_type = "google.protobuf.Empty";
     } else {
       options.decode_type = matches[0];
-      std::cout << "Guessed proto as " << options.decode_type << std::endl;
+      console.info(StrCat("Guessed proto as ", options.decode_type));
     }
   }
 
