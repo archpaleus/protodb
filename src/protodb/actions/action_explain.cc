@@ -37,7 +37,6 @@
 #include "google/protobuf/wire_format_lite.h"
 #include "protodb/actions/common.h"
 #include "protodb/db/protodb.h"
-#include "protodb/io/color_printer.h"
 #include "protodb/io/mark.h"
 #include "protodb/io/printer.h"
 #include "protodb/io/term_colors.h"

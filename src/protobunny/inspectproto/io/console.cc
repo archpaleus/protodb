@@ -1,19 +1,17 @@
 #include "protobunny/inspectproto/io/console.h"
 
-//#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-//#include <unistd.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <optional>
 #include <string>
 
-//#include "absl/strings/ascii.h"
-//#include "absl/strings/cord.h"
+#include "protobunny/inspectproto/io/text_span.h"
 
 namespace protobunny::inspectproto::io {
 
 namespace {
 
+// Compile-time strlen
 constexpr int cstrlen(const char* str) {
   int len = 0;
   while (*str != '\0') {
@@ -23,6 +21,7 @@ constexpr int cstrlen(const char* str) {
   return len;
 }
 
+// Compile-time concatenation of strings.
 template <typename... Strings>
 constexpr const char* _(Strings... strings) {
   const auto size = (0 + ... + cstrlen(strings));
@@ -38,68 +37,77 @@ constexpr const char* _(Strings... strings) {
 
 }  // namespace
 
-#ifdef DEBUG
+#ifndef NDEBUG
 static constexpr bool kEnableDebug = true;
 #else
 static constexpr bool kEnableDebug = false;
 #endif
 
-// static constexpr auto RESET = "\033[0m";
-#define T_RESET "\033[0m"
-namespace termcodes {
-
-constexpr const auto& reset = "\033[0m";
-constexpr auto& black = "\u001b[30m";
-constexpr auto& red = "\u001b[31m";
-constexpr auto& green = "\u001b[32m";
-constexpr auto& yellow = "\u001b[33m";
-constexpr auto& blue = "\u001b[34m";
-constexpr auto& magenta = "\u001b[35m";
-constexpr auto& cyan = "\u001b[36m";
-constexpr auto& white = "\u001b[37m";
-
-}  // namespace termcodes
-
-Console::Console()
-    : out_(stdout), istty_(fileno(out_)), enable_ansi_sequences_(true) {
+std::optional<std::string> getenv_(std::string_view name) {
+  const char* value = getenv(name.data());
+  if (value == nullptr)
+    return std::nullopt;
+  return std::string(value);
 }
 
-inline void Console::emit(const std::string& msg) {
+Console::Console() : out_(stdout), istty_(isatty(fileno(out_))) {
+  auto env_no_color = getenv_("NO_COLOR");
+  auto env_term = getenv_("TERM");
+  bool dumb_terminal = env_term.value_or("") == "dumb";
+
+  enable_ansi_sequences_ = !env_no_color && !dumb_terminal;
+}
+
+void Console::emit(const std::string& msg) {
   fputs(msg.c_str(), out_);
 }
 
 void Console::print(const std::string& msg) {
-  fprintf(out_, "%s\n", msg.c_str());
+  fputs(msg.c_str(), out_);
+  fputs("\n", out_);
 }
 
 void Console::info(const std::string& msg) {
   if (verbose_) {
-    fputs(termcodes::reset, out_);
-    fputs(termcodes::white, out_);
-    fprintf(out_, "%s\n", msg.c_str());
-    fputs(termcodes::reset, out_);
+    Line line;
+    line.append(fmt::color::white, msg);
+    fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+    fputs("\n", out_);
   }
 }
 
 void Console::debug(const std::string& msg) {
   if constexpr (kEnableDebug) {
-    fputs(termcodes::blue, out_);
-    fprintf(out_, "%s" T_RESET "\n", msg.c_str());
+    Line line;
+    line.append(fmt::color::blue, msg);
+    fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+    fputs("\n", out_);
   }
 }
 
 void Console::warning(const std::string& msg) {
-  fputs(termcodes::reset, out_);
-  fputs(termcodes::yellow, out_);
-  fprintf(out_, "warning: %s" T_RESET "\n", msg.c_str());
-  fputs(termcodes::reset, out_);
+  Line line;
+  line.append(fmt::color::yellow, "warning: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
 }
 
 void Console::error(const std::string& msg) {
-  fputs(termcodes::reset, out_);
-  fputs(termcodes::red, out_);
-  fprintf(out_, "error: %s\n", msg.c_str());
-  fputs(termcodes::reset, out_);
+  Line line;
+  line.append(fmt::color::red, "error: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
+}
+
+void Console::fatal(const std::string& msg) {
+  Line line;
+  line.append(fmt::color::red, "fatal: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
+  exit(-99);
 }
 
 }  // namespace protobunny::inspectproto::io

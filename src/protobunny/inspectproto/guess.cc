@@ -1,14 +1,5 @@
 #include "protobunny/inspectproto/guess.h"
 
-// #include <ctype.h>
-// #include <errno.h>
-// #include <fcntl.h>
-// #include <limits.h>  // For PATH_MAX
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <sys/stat.h>
-// #include <sys/types.h>
-// #include <unistd.h>
 
 #include <filesystem>
 #include <fstream>
@@ -43,6 +34,7 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
+#include "protobunny/inspectproto/io/console.h"
 #include "protobunny/inspectproto/io/mark.h"
 #include "protobunny/inspectproto/io/parsing_scanner.h"
 #include "protobunny/inspectproto/io/scan_context.h"
@@ -307,7 +299,7 @@ static int ScoreMessageAgainstParsedFields(
   return score;
 }
 
-bool Guess(const absl::Cord& data, DescriptorDatabase* descriptor_db,
+bool Guess(io::Console& console, const absl::Cord& data, DescriptorDatabase* descriptor_db,
            std::vector<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(descriptor_db, nullptr);
 
@@ -315,6 +307,10 @@ bool Guess(const absl::Cord& data, DescriptorDatabase* descriptor_db,
   ZeroCopyInputStream* zcis = &cord_input;
   CodedInputStream cis(zcis);
 
+  if (data.empty()) {
+    console.info("zero-length input");
+    return true;
+  }
   GuessContext context{cis, &data, nullptr, pool.get(), descriptor_db};
 
   cis.SetTotalBytesLimit(data.size());
@@ -322,10 +318,10 @@ bool Guess(const absl::Cord& data, DescriptorDatabase* descriptor_db,
   if (!ScanInputForFields(context, cis, fields)) {
     context.DebugLog(
         absl::StrCat("scan fields error -- cord size: ", data.size()));
-    std::cerr << "Failure parsing message " << std::endl;
+    console.error("failure parsing message");
   }
   if (fields.empty()) {
-    std::cerr << "Unable to parse message " << std::endl;
+    console.error("unable to parse message");
     return false;
   }
   context.DebugLog(absl::StrCat("scan ok "));

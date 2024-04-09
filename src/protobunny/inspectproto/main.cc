@@ -9,6 +9,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "fmt/core.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
@@ -127,37 +128,36 @@ bool ImportProtoFilesToSimpleDatabase(
     return -7;
   }
   AddDescriptorsToSimpleDescriptorDatabase(database, parsed_files);
+
+  // TODO: CHECK THIS
+  return 0;
 }
 
 struct Options {
   std::string input_filepath = "/dev/stdin";
-  std::string decode_type;
   std::vector<std::string> descriptor_set_in_paths;
   int skip_bytes = 0;
-  bool plain = false;
+
+  ExplainOptions explain_options;
 };
 
 void PrintUsage(Console& c) {
-  c.print("inspectproto  - a tool for viewing binary-encoded Protocol Buffers");
+  c.print("inspectproto - a tool for viewing binary-encoded Protocol Buffers");
   c.print("");
-  c.print("Usage:");
-  c.print("  inspectproto ARGS [[.proto files]]");
+  c.print("Usage: inspectproto [options...] <file>");
+  c.print("");
 }
 
-void PrintHelp() {
-  std::cerr << "Arguments:" << std::endl;
-  std::cerr << "  -f: input file to read, defaults to /dev/stdin" << std::endl;
-  std::cerr << "  -i,--descriptor_set_in: descriptor sets to describe data"
-            << std::endl;
-  std::cerr << "  --decode_type: decode using the given message type"
-            << std::endl;
-  std::cerr << "     is not specified" << std::endl;
-  std::cerr << "  -I,--proto_path: specifies a directory to search for imports"
-            << std::endl;
-  std::cerr << "  --plain: disable ANSI escape sequences in output" << std::endl;
+void PrintHelp(Console& c) {
+  c.print("Arguments:");
+  c.print("  -i,--descriptor_set_in: descriptor sets to describe data");
+  c.print("");
+  c.print("  --decode_type: decode using the given message type");
+  c.print("");
+  c.print("  --plain: disable ANSI escape sequences in output");
 }
 
-int Main(int argc, char* argv[]) {
+int Run(int argc, char* argv[]) {
   absl::InitializeLog();
 
   io::Console console;
@@ -167,7 +167,6 @@ int Main(int argc, char* argv[]) {
   if (argc <= 1) {
     if (isatty(STDIN_FILENO)) {
       console.error("No input provided.");
-      std::cerr << std::endl;
       PrintUsage(console);
       return 0;
     }
@@ -177,55 +176,62 @@ int Main(int argc, char* argv[]) {
   CommandLineParser parser;
   auto maybe_args = parser.ParseArguments(argc, argv);
   if (!maybe_args) {
-    std::cerr << "error: Failed to parse command-line args" << std::endl;
+    console.error("Failed to parse command-line args");
     return -1;
   }
+  const auto& args = *maybe_args;
 
   // Process the parsed command-line parameters.
   Options options;
-  for (const CommandLineParam& param : maybe_args->params) {
-    if (param.first == "-h" || param.first == "--help") {
+  for (const CommandLineParam& param_pair : args.params) {
+    const auto& option = param_pair.first;
+    if (option == "-h" || option == "--help") {
       PrintUsage(console);
-      std::cerr << std::endl;
-      PrintHelp();
+      PrintHelp(console);
       return 0;
-    } else if (param.first == "-v" || param.first == "--verbose") {
+    } else if (option == "-v" || option == "--verbose") {
       console.verbose_ = true;
-    } else if (param.first == "-i" || param.first == "--descriptor_set_in") {
+    } else if (option == "-i" || option == "--descriptor_set_in") {
       constexpr auto kPathSeparator = ",";
       std::vector<std::string_view> paths =
-          absl::StrSplit(param.second, kPathSeparator);
+          absl::StrSplit(param_pair.second, kPathSeparator);
       for (const auto& path : paths) {
         options.descriptor_set_in_paths.push_back(std::string(path));
       }
-    } else if (param.first == "--decode_type") {
-      options.decode_type = param.second;
-    } else if (param.first == "-f" || param.first == "--file") {
-      options.input_filepath = param.second;
-    } else if (param.first == "--skip") {
-      if (!absl::SimpleAtoi(param.second, &options.skip_bytes)) {
-        std::cerr << "Invalid input for skip: " << param.second << std::endl;
+    } else if (option == "--decode_type") {
+      options.explain_options.decode_type = param_pair.second;
+    } else if (option == "-f" || option == "--file") {
+      options.input_filepath = param_pair.second;
+    } else if (option == "--nocolor") {
+      console.enable_ansi_sequences_ = false;
+    } else if (option == "--skip") {
+      if (!absl::SimpleAtoi(param_pair.second, &options.skip_bytes)) {
+        console.error(fmt::format("Invalid input for skip: {}", param_pair.second));
         return -4;
       }
-    } else if (param.first == "--proto_path" || param.first == "-I") {
-      std::string path = param.second;
+    } else if (option == "--proto_path" || option == "-I") {
+      std::string path = param_pair.second;
       std::vector<std::string_view> paths =
-          absl::StrSplit(param.second, absl::MaxSplits("=", 1));
+          absl::StrSplit(param_pair.second, absl::MaxSplits("=", 1));
       if (paths.size() == 1) {
         path = absl::StripSuffix(path, "/");
         maybe_args->inputs.push_back(path + "//");
       } else {
-        // TODO(bholmes): We dont' yet support mapped paths.
-        LOG(FATAL) << "Mapped paths are not supported yet; mapping " << paths[0]
-                   << " -> " << paths[1];
+        // TODO(bholmes): We don't support mapped paths, and we probably never
+        // will.
+        console.error(StrCat("Mapped paths are not supported yet; mapping ",
+                             paths[0], " -> ", paths[1]));
+        return -6;
       }
     } else {
-      std::cerr << "Unknown param: " << param.first << std::endl;
+      console.error(StrCat("Unknown param: ", option));
       return -5;
     }
   }
 
+  console.debug("creating descriptor database");
   auto simpledb = std::make_unique<SimpleDescriptorDatabase>();
+
   // Add an empty proto definition.
   // This is the default decode type that we'll use when none is specified.
   FileDescriptorProto empty;
@@ -234,54 +240,69 @@ int Main(int argc, char* argv[]) {
   simpledb->Add(empty);
 
   // Load any descriptors sets specified from the command line.
+  // TODO(bholmes): handle multiple descriptor sets
   FileDescriptorSet descriptor_set;
   if (!options.descriptor_set_in_paths.empty()) {
     const auto filepath = options.descriptor_set_in_paths[0];
     if (!ParseProtoFromFile(filepath, &descriptor_set)) {
-      std::cerr << "Failed to parse " << filepath << std::endl;
+      console.error(StrCat("Failed to load desciptor set: ", filepath));
       return -2;
     }
   }
 
   AddDescriptorSetToSimpleDescriptorDatabase(simpledb.get(), descriptor_set);
 
+  if (options.input_filepath.empty()) {
+    console.error("No input provided.");
+    return -1;
+  }
+  //options.input_filepath = args.inputs[0];
+  if (options.input_filepath == "-") {
+    options.input_filepath = "/dev/stdin";
+  }
+
   // Load any .proto files given from the command line.
-  ImportProtoFilesToSimpleDatabase(simpledb.get(), maybe_args->inputs);
+  if (args.inputs.size() > 1) {
+    std::vector<std::string> proto_files(args.inputs.begin() + 1,
+                                         args.inputs.end());
+    ImportProtoFilesToSimpleDatabase(simpledb.get(), proto_files);
+  }
 
   // Read the input data.
   absl::Cord data;
   console.info(StrCat("Reading input from ", options.input_filepath));
   auto fp = fopen(options.input_filepath.c_str(), "rb");
   if (!fp) {
-    std::cerr << "error: unable to open file " << options.input_filepath
-              << std::endl;
-    return false;
+    console.error(StrCat("Unable to open file: ", options.input_filepath));
+    return -3;
   }
   int fd = fileno(fp);
   if (isatty(fd)) {
-    std::cerr << "error: cannot read from TTY" << std::endl;
-    return false;
+    console.error("cannot read from TTY ");
+    return -4;
   }
+
+  const int kMaxReadSize = 10 << 20;
   FileInputStream in(fd);
   in.Skip(options.skip_bytes);
-  in.ReadCord(&data, 10 << 20);
+  in.ReadCord(&data, kMaxReadSize);
   fclose(fp);
 
   // If no decode type was given, try to guess one.
-  if (options.decode_type.empty()) {
+  if (options.explain_options.decode_type.empty()) {
     std::vector<std::string> matches;
-    Guess(data, simpledb.get(), &matches);
+    Guess(console, data, simpledb.get(), &matches);
     if (matches.empty()) {
-      options.decode_type = "google.protobuf.Empty";
+      options.explain_options.decode_type = "google.protobuf.Empty";
     } else {
-      options.decode_type = matches[0];
-      console.info(StrCat("Guessed proto as ", options.decode_type));
+      options.explain_options.decode_type = matches[0];
+      console.info(
+          StrCat("Guessed proto as ", options.explain_options.decode_type));
     }
   }
 
   // Explain the input data.
-  std::cout << std::endl;
-  Explain(data, simpledb.get(), options.decode_type);
+  Explain(console, data, simpledb.get(), options.explain_options);
 
   return 0;
 }
@@ -289,5 +310,5 @@ int Main(int argc, char* argv[]) {
 }  // namespace protobunny::inspectproto
 
 int main(int argc, char* argv[]) {
-  return ::protobunny::inspectproto::Main(argc, argv);
+  return ::protobunny::inspectproto::Run(argc, argv);
 }

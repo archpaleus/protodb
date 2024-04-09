@@ -26,6 +26,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "fmt/color.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
@@ -35,10 +36,8 @@
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
 #include "protobunny/inspectproto/common.h"
-#include "protobunny/inspectproto/io/color_printer.h"
 #include "protobunny/inspectproto/io/mark.h"
 #include "protobunny/inspectproto/io/printer.h"
-#include "protobunny/inspectproto/io/term_colors.h"
 
 namespace protobunny::inspectproto {
 
@@ -157,17 +156,15 @@ struct Field {
   // as a protobuf message.
   bool is_valid_message = false;
 
-  // True if the data portion is non-zero in size and
-  // all characters are ASCII printable.
-  bool _is_valid_ascii = false;
-
   // True if the data portion is non-zero in size and is valid UTF-8.
   // bool is_valid_ut8 = false;  // TODO
 };
 
+
 struct ExplainPrinter : public Printer {
   using Printer::Printer;
-  ExplainPrinter() {
+
+  ExplainPrinter(io::Console& console) : Printer(console_) {
     indent_ = 0;
   }
   virtual ~ExplainPrinter() {}
@@ -197,7 +194,72 @@ struct ExplainPrinter : public Printer {
     return ss.str();
   }
 
-  void Emit(const Tag& tag, const Field& field) {
+#if 1
+  void EmitTagAndField(const Tag& tag, const Field& field) {
+    Line line;
+    std::string data =
+        fmt::format("{}{}", tag.segment.snippet.TryFlat().value(),
+                    field.segment.snippet.TryFlat().value());
+    int data_len = data.length();
+    std::string start_offset =
+        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
+    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+    std::string wire_type = WireTypeLetter(tag.wire_type);
+    line.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
+    line.append(fmt::format("{:26}", hex_data));
+    line.append(fmt::color::cornflower_blue, fmt::format(" {}", wire_type));
+    line.append(fmt::format(" {}", indent_spacing()));
+    line.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
+    line.append(" : ");
+    const bool is_packed =
+        tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
+    if (field.is_valid_message) {
+      if (!field.cpp_type.empty()) {
+        line.append(field.cpp_type);
+        line.append(" ");
+      }
+      if (!field.message_type.empty()) {
+        line.append(fmt::color::white, field.message_type);
+        line.append(" ");
+      }
+      line.append(fmt::color::yellow, field.name);
+      line.append(":  ");
+      line.append(fmt::color::purple, fmt::format("({} bytes)", data_len));
+    } else if (is_packed) {
+      line.append(fmt::color::yellow, "<packed>");
+      line.append(" = \"");
+      line.append(fmt::color::green, data);
+      line.append("\"");
+    } else if (tag.wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+      if (!field.cpp_type.empty()) {
+        line.append(field.cpp_type);
+        line.append(" ");
+      }
+      line.append(fmt::color::yellow, field.name);
+      line.append(" = \"");
+      std::string printable_str = PrintableString(field.value);
+      constexpr auto kMaxLen = 60;
+      if (printable_str.length() > kMaxLen) {
+        line.append(fmt::color::green, printable_str.substr(0, kMaxLen - 3));
+        line.append("...\"");
+      } else {
+        line.append(fmt::color::green, printable_str);
+      }
+      line.append("\"");
+    } else {
+      if (!field.cpp_type.empty()) {
+        line.append(field.cpp_type);
+        line.append(" ");
+      }
+      line.append(fmt::color::yellow, field.name);
+      line.append(" = ");
+      line.append(fmt::color::light_green, field.value);
+    }
+
+    EmitLine(line);
+  }
+#else
+  void EmitTagAndField(const Tag& tag, const Field& field) {
     std::string data = absl::StrCat(tag.segment.snippet.TryFlat().value(),
                                     field.segment.snippet.TryFlat().value());
     std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
@@ -266,27 +328,43 @@ struct ExplainPrinter : public Printer {
     }
     std::cout << std::endl;
   }
+#endif
+
   void EmitInvalidTag(const ExplainSegment& segment) {
-    // TODO: add a message with the reason why it failed
-    std::cout << " FAILED TO PARSE TAG: " << std::endl;
-    std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6))
-              << std::setw(26)
-              << absl::StrCat("[", BinToHex(segment.snippet, 8), "]")
-              << std::endl;
+    std::string data = std::string(segment.snippet.TryFlat().value());
+
+    // TODO: add a message with the reason why we failed to parse the tag
+    Line line1;
+    line1.append(fmt::color::red, " FAILED TO PARSE TAG: ");
+    Line line2;
+    std::string start_offset =
+        absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6));
+    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+    line2.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
+    line2.append(fmt::format("{:26}", hex_data));
+    EmitLine(line2);
   }
+
   void EmitInvalidField(const Tag& tag, const ExplainSegment& segment) {
-    // TODO: add a message with the reason why it failed
-    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
-              << std::setw(26)
-              << absl::StrCat("[", BinToHex(tag.segment.snippet, 8), "]") << " "
-              << indent_spacing() << std::setw(4) << tag.field_number << " : "
-              << WireTypeName(tag.wire_type) << std::endl;
-    std::cout << " FAILED TO PARSE FIELD: " << std::endl;
-    std::cout << absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6))
-              << std::setw(26)
-              << absl::StrCat("[", BinToHex(segment.snippet, 8), "]")
-              << std::endl;
+    std::string data = std::string(tag.segment.snippet.TryFlat().value());
+
+    // TODO: add a message with the reason why we failed to parse the tag
+    Line line1;
+    line1.append(fmt::color::red, " FAILED TO PARSE FIELD: ");
+    Line line2;
+    std::string start_offset =
+        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
+    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+    line2.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
+    line2.append(fmt::format("{:26}", hex_data));
+    line2.append(fmt::format(" {}", indent_spacing()));
+    line2.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
+    line2.append(WireTypeName(tag.wire_type));
+    EmitLine(line2);
   }
+
+public:
+  io::Console console_;
 };
 
 struct ExplainContext : public ScanContext {
@@ -333,14 +411,14 @@ struct ExplainMark {
   std::optional<uint32_t> maybe_marker_end_;
 };
 
-// Move to descriptor_utils.cc
-static const Descriptor* FindMessageType(DescriptorDatabase* db,
+// TODO: Move to descriptor_utils.cc
+static const Descriptor* FindMessageType(io::Console& console,
+                                         DescriptorDatabase* db,
                                          const DescriptorPool* pool,
                                          const std::string& message_type) {
   {
     const auto* descriptor = pool->FindMessageTypeByName(message_type);
     if (descriptor) {
-      // std::cerr << descriptor->full_name() << std::endl;
       return descriptor;
     }
   }
@@ -357,7 +435,7 @@ static const Descriptor* FindMessageType(DescriptorDatabase* db,
   }
 
   if (matches.empty()) {
-    std::cerr << "No matching type for " << message_type << "" << std::endl;
+    console.warning(absl::StrCat("No matching type for ", message_type));
     return nullptr;
   } else if (matches.size() == 1) {
     return pool->FindMessageTypeByName(matches[0]);
@@ -552,6 +630,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
+  io::Console& console = context.explain_printer.console_;
   CodedInputStream& cis = context.cis;
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);
@@ -570,7 +649,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
           context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
           return false;
         }
-        context.explain_printer.Emit(*tag, *field);
+        context.explain_printer.EmitTagAndField(*tag, *field);
         break;
       }
       case WireFormatLite::WIRETYPE_FIXED32: {
@@ -579,7 +658,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
           context.explain_printer.EmitInvalidField(*tag, field_mark.segment());
           return false;
         }
-        context.explain_printer.Emit(*tag, *field);
+        context.explain_printer.EmitTagAndField(*tag, *field);
         break;
       }
       case WireFormatLite::WIRETYPE_LENGTH_DELIMITED: {
@@ -589,7 +668,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
           return false;
         }
 
-        context.explain_printer.Emit(*tag, *field);
+        context.explain_printer.EmitTagAndField(*tag, *field);
         if (field->is_valid_message) {
           CordInputStream cord_input(context.cord);
           CodedInputStream chunk_cis(&cord_input);
@@ -617,7 +696,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
                                                    field_mark.segment());
           return false;
         }
-        context.explain_printer.Emit(*tag, *field);
+        context.explain_printer.EmitTagAndField(*tag, *field);
         break;
       }
       default:
@@ -630,25 +709,17 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
   return true;
 }
 
-std::string readFile(std::filesystem::path path) {
-  std::ifstream f(path, std::ios::in | std::ios::binary);
-  const auto sz = std::filesystem::file_size(path);
 
-  std::string result(sz, '\0');
-  f.read(result.data(), sz);
 
-  return result;
-}
-
-bool Explain(const absl::Cord& cord, DescriptorDatabase* db,
-             std::string decode_type) {
-  ABSL_CHECK(!decode_type.empty());
+bool Explain(io::Console& console, const absl::Cord& cord,
+             DescriptorDatabase* db, const ExplainOptions& options) {
+  ABSL_CHECK(!options.decode_type.empty());
   ABSL_CHECK(db);
 
   auto descriptor_pool = std::make_unique<DescriptorPool>(db, nullptr);
   ABSL_CHECK(descriptor_pool);
   const auto* descriptor =
-      FindMessageType(db, descriptor_pool.get(), decode_type);
+      FindMessageType(console, db, descriptor_pool.get(), options.decode_type);
   if (!descriptor) {
     return false;
   }
@@ -657,7 +728,7 @@ bool Explain(const absl::Cord& cord, DescriptorDatabase* db,
   CodedInputStream cis(&cord_input);
   cis.SetTotalBytesLimit(cord.size());
 
-  ExplainPrinter explain_printer;
+  ExplainPrinter explain_printer(console);
   ExplainContext scan_context(cis, cord, explain_printer, descriptor_pool.get(),
                               nullptr);
 

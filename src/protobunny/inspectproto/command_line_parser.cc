@@ -15,6 +15,11 @@
 
 namespace protobunny::inspectproto {
 
+using absl::InvalidArgumentError;
+using absl::MaxSplits;
+using absl::StrCat;
+using absl::StrSplit;
+
 static bool ExpandArgumentFile(const std::string& file,
                                std::vector<std::string>* arguments) {
   std::ifstream file_stream(file.c_str());
@@ -61,16 +66,19 @@ using ArgPair = std::pair<std::string_view, std::string_view>;
 absl::StatusOr<ArgPair> ParseNext(std::span<std::string>& argview) {
   ABSL_CHECK(!argview.empty());
 
-  constexpr auto no_value_params = std::array<std::string_view, 4>{
+  constexpr auto no_value_params = std::array<std::string_view, 6>{
       "-h",
       "--help",
       "-v",
       "--verbose",
+      "--color",
+      "--nocolor",
   };
   const auto& arg = *pop_front(argview).value();
-  if (arg.starts_with("--")) {
-    std::vector<std::string_view> parts =
-        absl::StrSplit(arg, absl::MaxSplits("=", 1));
+  if (arg == "-") {
+    return std::make_pair(std::string_view{}, std::string_view{arg});
+  } else if (arg.starts_with("--")) {
+    std::vector<std::string_view> parts = StrSplit(arg, MaxSplits("=", 1));
     const auto name = parts[0];
     const bool value_expected =
         absl::c_find(no_value_params, name) == no_value_params.end();
@@ -79,8 +87,7 @@ absl::StatusOr<ArgPair> ParseNext(std::span<std::string>& argview) {
         return std::make_pair(name, parts[1]);
       } else {
         if (argview.empty()) {
-          return absl::InvalidArgumentError(
-              absl::StrCat("unknown option: ", name));
+          return InvalidArgumentError(StrCat("unknown option: ", name));
         }
         return std::make_pair(name,
                               std::string_view{*pop_front(argview).value()});

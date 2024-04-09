@@ -1,29 +1,23 @@
-cc_library(
-    name = "io",
-    deps = [
-        ":printer",
-    ],
+cc_binary(
+    name = "test",
+    srcs = ["test.cc"],
+    deps = [":console"],
 )
 
 cc_library(
-    name = "scanner",
+    name = "console",
     srcs = [
-        "mark.cc",
-        "parsing_scanner.cc",
+        "console.cc",
     ],
     hdrs = [
-        "mark.h",
-        "parsing_scanner.h",
-        "scan_context.h",
+        "console.h",
     ],
-    include_prefix = "protodb/io",
+    include_prefix = "console",
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
         ":printer",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
     ],
 )
 
@@ -32,16 +26,20 @@ cc_library(
     srcs = [
     ],
     hdrs = [
-        "color_printer.h",
-        "printer.h",
+        "term_codes.h",
+        "term_color.h",
         "term_colors.h",
+        "term_printer.h",
+        #"term_sequence.h",
+        "term_state.h",
     ],
-    include_prefix = "protodb/io",
+    include_prefix = "console",
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@fmt//:fmt",
     ],
 )

@@ -1,25 +1,32 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_PRINTER_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_PRINTER_H__
+#pragma once
 
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <optional>
 #include <string>
+#include <variant>
+
+#include "fmt/color.h"
+#include "src/protobunny/inspectproto/io/console.h"
+#include "src/protobunny/inspectproto/io/text_span.h"
 
 namespace protobunny::inspectproto {
 
 struct Printer {
-  Printer() {}
+  Printer(io::Console& console) : console_(console) {}
   virtual ~Printer() {}
 
   // Emits text to the printer.
-  // No indentation will be applied.
-  virtual void Emit(std::string_view str) {}
+  virtual void Emit(const std::string& str) { console_.emit(str); }
+  virtual void EmitLine(const std::string& str) { console_.print(str); }
 
-  // Emits text followed by a new line.
-  virtual void EmitLine(std::string_view str) {}
+  // Emits formatted spans to the printer.
+  virtual void Emit(const Span& span) { console_.emit(span.to_string(console_.enable_ansi_sequences_)); }
+  virtual void EmitLine(const Line& line) { console_.print(line.to_string(console_.enable_ansi_sequences_)); }
 
   void indent() {
     ++indent_;
@@ -52,8 +59,7 @@ struct Printer {
 
  protected:
   int indent_ = 0;
+  io::Console& console_;
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_PRINTER_H__

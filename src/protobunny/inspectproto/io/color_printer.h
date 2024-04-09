@@ -9,13 +9,14 @@
 #include <string>
 
 #include "protobunny/inspectproto/io/printer.h"
-#include "protobunny/inspectproto/io/term_colors.h"
 
 namespace protobunny::inspectproto {
 
 struct ColorPrinter : public Printer {
   ColorPrinter() {}
   virtual ~ColorPrinter() {}
+
+  void EmitLine(Line& line);
 };
 
 }  // namespace protobunny::inspectproto

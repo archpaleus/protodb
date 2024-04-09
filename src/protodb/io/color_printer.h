@@ -9,7 +9,6 @@
 #include <string>
 
 #include "protodb/io/printer.h"
-#include "protodb/io/term_colors.h"
 
 namespace protodb {
 

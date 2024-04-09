@@ -1,14 +1,16 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_CONSOLE_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_CONSOLE_H__
+#ifndef CONSOLE_CONSOLE_H__
+#define CONSOLE_CONSOLE_H__
 
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
-#include <cstdio>
-#include <cstdlib>
 #include <string>
 
-namespace protobunny::inspectproto::io {
+//#include "console/term_sequence.h"
+
+namespace console {
 
 struct Console {
   Console();
@@ -37,16 +39,16 @@ struct Console {
   // Messages that precede immediate program termination.
   void fatal(const std::string& msg);
 
-  bool verbose_ = false;
-
-  bool enable_ansi_sequences_ = true;
 
  protected:
   FILE* out_ = stdout;
   FILE* err_ = stderr;
   const bool istty_;
+
+  bool verbose_ = true;
+  bool enable_ansi_sequences_ = false;
 };
 
-}  // namespace protobunny::inspectproto::io
+}  // namespace console
 
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_CONSOLE_H__
+#endif  // CONSOLE_CONSOLE_H__
