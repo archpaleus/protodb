@@ -1,11 +1,12 @@
 #ifndef CONSOLE_CONSOLE_H__
 #define CONSOLE_CONSOLE_H__
 
+#include <unistd.h>
+
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include <unistd.h>
 
 #include "console/text_span.h"
 
@@ -29,8 +30,7 @@ struct Console {
   void info(const std::string& msg);
 
   // Messages that may affect program behavior but do not prevent it from
-  // proceeding. Warning messages will be colored if the output supports ANSI
-  // esc
+  // proceeding. 
   void warning(const std::string& msg);
 
   // Informative message to the user that affect program behavior

@@ -45,61 +45,44 @@ void Console::print(const std::string& msg) {
 
 void Console::info(const std::string& msg) {
   if (verbose_) {
-    if (enable_ansi_sequences_) {
-      auto s = fmt::format("info: {}\n",
-                           fmt::styled(msg, fmt::fg(fmt::color::alice_blue)));
-      fputs(s.c_str(), out_);
-    } else {
-      auto s = fmt::format("info: {}\n", msg);
-      fputs(s.c_str(), out_);
-    }
+    Line line;
+    line.append(fmt::color::white, msg);
+    fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+    fputs("\n", out_);
   }
 }
 
 void Console::debug(const std::string& msg) {
   if constexpr (kEnableDebug) {
-    if (enable_ansi_sequences_) {
-      auto s = fmt::format("debug: {}\n",
-                           fmt::styled(msg, fmt::fg(fmt::color::cyan)));
-      fputs(s.c_str(), out_);
-    } else {
-      auto s = fmt::format("debug: {}\n", msg);
-      fputs(s.c_str(), out_);
-    }
+    Line line;
+    line.append(fmt::color::blue, msg);
+    fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+    fputs("\n", out_);
   }
 }
 
 void Console::warning(const std::string& msg) {
-  if (enable_ansi_sequences_) {
-    auto s = fmt::format("warning: {}\n",
-                         fmt::styled(msg, fmt::fg(fmt::color::yellow_green)));
-    fputs(s.c_str(), out_);
-  } else {
-    auto s = fmt::format("warning: {}\n", msg);
-    fputs(s.c_str(), out_);
-  }
+  Line line;
+  line.append(fmt::color::yellow, "warning: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
 }
 
 void Console::error(const std::string& msg) {
-  if (enable_ansi_sequences_) {
-    auto s =
-        fmt::format("error: {}\n", fmt::styled(msg, fmt::fg(fmt::color::red)));
-    fputs(s.c_str(), out_);
-  } else {
-    auto s = fmt::format("error: {}\n", msg);
-    fputs(s.c_str(), out_);
-  }
+  Line line;
+  line.append(fmt::color::red, "error: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
 }
 
 void Console::fatal(const std::string& msg) {
-  if (enable_ansi_sequences_) {
-    auto s = fmt::format("error: {}\n",
-                         fmt::styled(msg, fmt::fg(fmt::color::dark_red)));
-    fputs(s.c_str(), out_);
-  } else {
-    auto s = fmt::format("error: {}\n", msg);
-    fputs(s.c_str(), out_);
-  }
+  Line line;
+  line.append(fmt::color::red, "fatal: ");
+  line.append(msg);
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
+  fputs("\n", out_);
   exit(-99);
 }
 
