@@ -10,22 +10,23 @@
 
 namespace console {
 
+namespace {
 #ifdef DEBUG
 static constexpr bool kEnableDebug = true;
 #else
 static constexpr bool kEnableDebug = false;
 #endif
+}
 
 std::optional<std::string> getenv_(std::string_view name) {
   const char* value = getenv(name.data());
-  if (value == nullptr)
+  if (value == nullptr) {
     return std::nullopt;
+  }
   return std::string(value);
 }
 
 Console::Console() : out_(stdout), istty_(isatty(fileno(out_))) {
-  // err_istty_ = isatty(fileno(err_));
-
   auto env_no_color = getenv_("NO_COLOR");
   auto env_term = getenv_("TERM");
   bool dumb_terminal = env_term.value_or("") == "dumb";
@@ -38,7 +39,8 @@ void Console::emit(const std::string& msg) {
 }
 
 void Console::print(const std::string& msg) {
-  fprintf(out_, "%s\n", msg.c_str());
+  fputs(msg.c_str(), out_);
+  fputs("\n", out_);
 }
 
 void Console::info(const std::string& msg) {

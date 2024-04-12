@@ -11,30 +11,15 @@ cc_library(
     ],
     hdrs = [
         "console.h",
+        "text_span.h"
     ],
     include_prefix = "console",
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
-        ":printer",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "printer",
-    srcs = [
-    ],
-    hdrs = [
-        "term_printer.h",
-    ],
-    include_prefix = "console",
-    strip_include_prefix = "",
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
         "@fmt//:fmt",
     ],
 )
+
+

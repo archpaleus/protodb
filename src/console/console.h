@@ -1,12 +1,13 @@
 #ifndef CONSOLE_CONSOLE_H__
 #define CONSOLE_CONSOLE_H__
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <unistd.h>
 
-#include <string>
+#include "console/text_span.h"
 
 namespace console {
 
@@ -15,9 +16,11 @@ struct Console {
 
   // Write to stdout without a newline.
   void emit(const std::string& msg);
+  void emit(const Span& span);
 
   // Write to stdout followed by a newline.
   void print(const std::string& msg);
+  void print(const Line& line);
 
   // Text enabled only when the app is compiled in debug mode.
   void debug(const std::string& msg);
