@@ -161,6 +161,9 @@ int Run(int argc, char* argv[]) {
   absl::InitializeLog();
 
   io::Console console;
+  
+  // This will only output if we are actually running a debug build.
+  console.debug("Running debug build");
 
   // If there are no arugments provided and stdin is connected to the terminal
   // then show help text.
