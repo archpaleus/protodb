@@ -1,18 +1,21 @@
-#ifndef PROTODB_IO_PRINTER_H__
-#define PROTODB_IO_PRINTER_H__
+#ifndef CONSOLE_TERM_PRINTER_H__
+#define CONSOLE_TERM_PRINTER_H__
 
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
+
+#include "console/term_color.h"
 
 namespace console {
 
-struct Printer {
-  Printer() {}
-  virtual ~Printer() {}
+struct TermPrinter {
+  TermPrinter() {}
+  virtual ~TermPrinter() {}
 
   // Emits text to the printer.
   // No indentation will be applied.
@@ -36,7 +39,7 @@ struct Printer {
 
   // RAII object to track indenting and unindenting.
   struct Indent {
-    Indent(Printer& printer) : p_(printer) {
+    Indent(TermPrinter& printer) : p_(printer) {
       p_.indent();
     }
     ~Indent() {
@@ -44,7 +47,7 @@ struct Printer {
     }
 
    protected:
-    Printer& p_;
+    TermPrinter& p_;
   };
   Indent WithIndent() {
     return Indent(*this);
@@ -56,4 +59,4 @@ struct Printer {
 
 }  // namespace protodb
 
-#endif  // PROTODB_IO_PRINTER_H__
+#endif  // CONSOLE_TERM_PRINTER_H__

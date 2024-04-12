@@ -1,41 +1,31 @@
-
+#include <cstdio>
 #include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
-#include <cstdio>
+#include "fmt/std.h"
 
 namespace console {
 
-enum Colors {Reset, Green, Red, Blue};
-
-struct ColorCode {
-  std::optional<Colors> fg;
-  std::optional<Colors> bg;
+class SequenceItem {
+  SequenceItem(std::string text) : text_(std::move(text)) {}
+ 
+  auto arg(int istty) {
+    if (istty && style_) {
+      return fmt::styled(text_, style_);
+    } else {
+      return fmt::arg(text_);
+    }
+  }
+  std::optional<fmt::text_style> style_;
+  std::string text_;
 };
 
-struct ColorReset {
-};
-
-struct Subsequence {
-  // Indirection to a Sequence object.
-  void* sequence;
-};
-
-using Code = std::variant<ColorCode, ColorReset>;
-using Text = std::variant<const char*, std::string, std::string_view>;
-using SequenceItem = std::variant<Code, Text>;
 
 using Sequence = std::vector<SequenceItem>;
 
-template<typename T>
-auto _seq_convert(T arg) -> SequenceItem {
-  puts("convert: ");
-  puts(__PRETTY_FUNCTION__);
-  Text t = "(unknown)";
-  return t;
-}
+
 inline auto _seq_convert(Colors color) -> SequenceItem {
   //puts("Colors");
   if (color == Reset)
@@ -70,19 +60,36 @@ inline auto _seq_convert(Sequence arg) -> SequenceItem {
 }
 
 
+#if 0
 template<typename... SequenceArgs>
-Sequence _seq(SequenceArgs... args) { return {_seq_convert(args)...}; };
+Sequence _seq(Sequence& seq, SequenceArgs... args) {
+  struct SeqOperator {
+    //void operator()(Sequence& seq, const Sequence& s) { seq.insert(seq.end(), s.begin(), s.end());  };
+    //void operator()(Sequence& seq, const T& arg) { seq.push_back(_seq_convert(arg)); };
+    void operator()(Sequence& seq, const auto& arg) {
+      if constexpr (std::is_same_v<Sequence, decltype(arg)>) {
+         seq.insert(seq.end(), arg.begin(), arg.end());
+      } else {
+         seq.push_back(_seq_convert(arg));
+      }
+    };
+  };
+  ((SeqOperator()(seq, args)), ...);
+};
 
-template<typename... LineArgs>
-Sequence span(LineArgs... args) {
-  return _seq(args...);
+template<typename... SpanArgs>
+Sequence span(SpanArgs... args) {
+  Sequence seq;
+  _seq(seq, args...);
+  return seq;
 };
 
 template<typename... LineArgs>
 Sequence line(LineArgs... args) {
-  return _seq(args...);
+  Sequence seq;
+  _seq(seq, args...);
+  return seq;
 };
-
 
 inline std::string ToString(const Code& item) {
   struct Visitor {
@@ -103,8 +110,10 @@ inline std::string ToString(const Text& item) {
 
 template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
+
 template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
+
 inline std::string ToString(const Sequence& sequence) {
   std::string buffer;
   for (const auto& item : sequence) {
@@ -116,5 +125,6 @@ inline std::string ToString(const Sequence& sequence) {
   }
   return buffer;
 }
+#endif
 
-}
+}  // namespace console

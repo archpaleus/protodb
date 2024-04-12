@@ -1,18 +1,1 @@
 workspace(name = "protodb")
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-protobuf_repo_tag = "3.22.3"
-http_archive(
-    name = "com_google_protobuf",
-    strip_prefix = "protobuf-" + protobuf_repo_tag,
-    urls = ["https://github.com/protocolbuffers/protobuf/archive/refs/tags/v%s.tar.gz" % protobuf_repo_tag],
-)
-load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-protobuf_deps()
-
-# TODO
-#load("@rules_python//python:pip.bzl", "pip_parse")
-#pip_parse( name = "pip", requirements_lock = ":requirements_lock.txt",)
-#load("@pip//:requirements.bzl", "install_deps")
-#install_deps()

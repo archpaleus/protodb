@@ -8,8 +8,6 @@
 
 #include <string>
 
-//#include "console/term_sequence.h"
-
 namespace console {
 
 struct Console {

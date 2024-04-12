@@ -26,12 +26,7 @@ cc_library(
     srcs = [
     ],
     hdrs = [
-        "term_codes.h",
-        "term_color.h",
-        "term_colors.h",
         "term_printer.h",
-        #"term_sequence.h",
-        "term_state.h",
     ],
     include_prefix = "console",
     strip_include_prefix = "",
