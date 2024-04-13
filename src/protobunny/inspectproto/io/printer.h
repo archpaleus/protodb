@@ -11,13 +11,16 @@
 #include <variant>
 
 #include "fmt/color.h"
-#include "src/protobunny/inspectproto/io/console.h"
-#include "src/protobunny/inspectproto/io/text_span.h"
+#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
+using console::Console;
+using console::Span;
+using console::Line;
+
 struct Printer {
-  Printer(io::Console& console) : console_(console) {}
+  Printer(Console& console) : console_(console) {}
   virtual ~Printer() {}
 
   // Emits text to the printer.
@@ -25,8 +28,8 @@ struct Printer {
   virtual void EmitLine(const std::string& str) { console_.print(str); }
 
   // Emits formatted spans to the printer.
-  virtual void Emit(const Span& span) { console_.emit(span.to_string(console_.enable_ansi_sequences_)); }
-  virtual void EmitLine(const Line& line) { console_.print(line.to_string(console_.enable_ansi_sequences_)); }
+  virtual void Emit(const Span& span) { console_.emit(span.to_string(console_.enable_ansi_sequences())); }
+  virtual void EmitLine(const Line& line) { console_.print(line.to_string(console_.enable_ansi_sequences())); }
 
   void indent() {
     ++indent_;
@@ -59,7 +62,7 @@ struct Printer {
 
  protected:
   int indent_ = 0;
-  io::Console& console_;
+  Console& console_;
 };
 
 }  // namespace protobunny::inspectproto

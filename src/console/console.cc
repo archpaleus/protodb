@@ -37,9 +37,16 @@ Console::Console() : out_(stdout), istty_(isatty(fileno(out_))) {
 void Console::emit(const std::string& msg) {
   fputs(msg.c_str(), out_);
 }
+void Console::emit(const Span& span) {
+  fputs(span.to_string(enable_ansi_sequences_).c_str(), out_);
+}
 
 void Console::print(const std::string& msg) {
   fputs(msg.c_str(), out_);
+  fputs("\n", out_);
+}
+void Console::print(const Line& line) {
+  fputs(line.to_string(enable_ansi_sequences_).c_str(), out_);
   fputs("\n", out_);
 }
 

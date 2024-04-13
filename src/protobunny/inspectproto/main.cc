@@ -25,7 +25,7 @@
 #include "protobunny/inspectproto/explain.h"
 #include "protobunny/inspectproto/guess.h"
 #include "protobunny/inspectproto/importer.h"
-#include "protobunny/inspectproto/io/console.h"
+#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
@@ -33,8 +33,8 @@ using namespace google::protobuf;
 using namespace google::protobuf::io;
 
 using absl::StrCat;
+using console::Console;
 using google::protobuf::FileDescriptorSet;
-using protobunny::inspectproto::io::Console;
 
 void AddDescriptorSetToSimpleDescriptorDatabase(
     SimpleDescriptorDatabase* database,
@@ -160,7 +160,7 @@ void PrintHelp(Console& c) {
 int Run(int argc, char* argv[]) {
   absl::InitializeLog();
 
-  io::Console console;
+  console::Console console;
   
   // This will only output if we are actually running a debug build.
   console.debug("Running debug build");
@@ -193,7 +193,7 @@ int Run(int argc, char* argv[]) {
       PrintHelp(console);
       return 0;
     } else if (option == "-v" || option == "--verbose") {
-      console.verbose_ = true;
+      console.set_verbose(true);
     } else if (option == "-i" || option == "--descriptor_set_in") {
       constexpr auto kPathSeparator = ",";
       std::vector<std::string_view> paths =
@@ -206,7 +206,7 @@ int Run(int argc, char* argv[]) {
     } else if (option == "-f" || option == "--file") {
       options.input_filepath = param_pair.second;
     } else if (option == "--nocolor") {
-      console.enable_ansi_sequences_ = false;
+      console.set_enable_ansi_sequences(false);
     } else if (option == "--skip") {
       if (!absl::SimpleAtoi(param_pair.second, &options.skip_bytes)) {
         console.error(fmt::format("Invalid input for skip: {}", param_pair.second));

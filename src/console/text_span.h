@@ -19,6 +19,7 @@ struct Span {
   std::string text_;
 
   Span(std::string text) : text_(std::move(text)) {}
+  Span(fmt::color color, std::string text) : style_(fmt::fg(color)), text_(std::move(text)) {}
   Span(fmt::text_style style, std::string text) : style_(style), text_(std::move(text)) {}
 
   std::string to_string(bool is_term = true) const {

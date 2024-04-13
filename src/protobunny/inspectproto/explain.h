@@ -6,17 +6,19 @@
 
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
-#include "protobunny/inspectproto/io/console.h"
+#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
+using ::console::Console;
 using ::google::protobuf::DescriptorDatabase;
 
 struct ExplainOptions {
   std::string decode_type;
 };
 
-bool Explain(io::Console& console, const absl::Cord& cord, DescriptorDatabase* db,
+
+bool Explain(Console& console, const absl::Cord& cord, DescriptorDatabase* db,
              const ExplainOptions& options);
 
 }  // namespace protobunny::inspectproto

@@ -1,5 +1,4 @@
-#ifndef CONSOLE_CONSOLE_H__
-#define CONSOLE_CONSOLE_H__
+#pragma once
 
 #include <unistd.h>
 
@@ -40,6 +39,15 @@ struct Console {
   // Messages that precede immediate program termination.
   void fatal(const std::string& msg);
 
+  bool verbose() const { return verbose_; }
+  void set_verbose(bool verbose = true) { 
+    verbose_ = verbose;
+  }
+  
+  bool enable_ansi_sequences() const { return enable_ansi_sequences_; }
+  void set_enable_ansi_sequences(bool enabled = true) {
+    enable_ansi_sequences_ = enabled;
+  }
 
  protected:
   FILE* out_ = stdout;
@@ -52,4 +60,3 @@ struct Console {
 
 }  // namespace console
 
-#endif  // CONSOLE_CONSOLE_H__

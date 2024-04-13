@@ -19,6 +19,7 @@ cc_library(
     include_prefix = "protobunny/inspectproto",
     strip_include_prefix = "",
     deps = [
+        "//src/console",
         "//src/protobunny/common",
         "//src/protobunny/inspectproto/io",
         "@com_google_absl//absl/log",

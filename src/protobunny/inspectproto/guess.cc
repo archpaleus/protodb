@@ -34,7 +34,6 @@
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/wire_format_lite.h"
-#include "protobunny/inspectproto/io/console.h"
 #include "protobunny/inspectproto/io/mark.h"
 #include "protobunny/inspectproto/io/parsing_scanner.h"
 #include "protobunny/inspectproto/io/scan_context.h"
@@ -299,7 +298,7 @@ static int ScoreMessageAgainstParsedFields(
   return score;
 }
 
-bool Guess(io::Console& console, const absl::Cord& data, DescriptorDatabase* descriptor_db,
+bool Guess(Console& console, const absl::Cord& data, DescriptorDatabase* descriptor_db,
            std::vector<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(descriptor_db, nullptr);
 

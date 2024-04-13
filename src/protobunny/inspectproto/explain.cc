@@ -38,9 +38,11 @@
 #include "protobunny/inspectproto/common.h"
 #include "protobunny/inspectproto/io/mark.h"
 #include "protobunny/inspectproto/io/printer.h"
+#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
+using ::console::Console;
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::EnumDescriptor;
 using ::google::protobuf::FieldDescriptor;
@@ -164,7 +166,7 @@ struct Field {
 struct ExplainPrinter : public Printer {
   using Printer::Printer;
 
-  ExplainPrinter(io::Console& console) : Printer(console_) {
+  ExplainPrinter(Console& console) : Printer(console_) {
     indent_ = 0;
   }
   virtual ~ExplainPrinter() {}
@@ -364,7 +366,7 @@ struct ExplainPrinter : public Printer {
   }
 
 public:
-  io::Console console_;
+  Console console_;
 };
 
 struct ExplainContext : public ScanContext {
@@ -412,7 +414,7 @@ struct ExplainMark {
 };
 
 // TODO: Move to descriptor_utils.cc
-static const Descriptor* FindMessageType(io::Console& console,
+static const Descriptor* FindMessageType(Console& console,
                                          DescriptorDatabase* db,
                                          const DescriptorPool* pool,
                                          const std::string& message_type) {
@@ -630,7 +632,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
-  io::Console& console = context.explain_printer.console_;
+  Console& console = context.explain_printer.console_;
   CodedInputStream& cis = context.cis;
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);
@@ -711,7 +713,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
 
 
 
-bool Explain(io::Console& console, const absl::Cord& cord,
+bool Explain(Console& console, const absl::Cord& cord,
              DescriptorDatabase* db, const ExplainOptions& options) {
   ABSL_CHECK(!options.decode_type.empty());
   ABSL_CHECK(db);

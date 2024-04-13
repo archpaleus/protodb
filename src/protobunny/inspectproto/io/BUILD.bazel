@@ -1,27 +1,8 @@
 cc_library(
     name = "io",
     deps = [
-        ":console",
         ":printer",
         ":scanner",
-    ],
-)
-
-cc_library(
-    name = "console",
-    srcs = [
-        "console.cc",
-    ],
-    hdrs = [
-        "console.h",
-         "text_span.h",
-    ],
-    include_prefix = "protobunny/inspectproto/io",
-    strip_include_prefix = "",
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_google_absl//absl/strings",
-        "@fmt//:fmt",
     ],
 )
 
@@ -75,7 +56,7 @@ cc_library(
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
-        ":console",
+        "//src/console",
         "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
         "@fmt//:fmt",
