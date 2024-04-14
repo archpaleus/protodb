@@ -199,7 +199,6 @@ struct ExplainPrinter : public Printer {
     std::string data =
         fmt::format("{}{}", tag.segment.snippet.TryFlat().value(),
                     field.segment.snippet.TryFlat().value());
-    int data_len = data.length();
     std::string start_offset =
         absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
     std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
@@ -223,7 +222,7 @@ struct ExplainPrinter : public Printer {
       }
       line.append(fmt::color::yellow, field.name);
       line.append(":  ");
-      line.append(fmt::color::purple, fmt::format("({} bytes)", data_len));
+      line.append(fmt::color::purple, fmt::format("({} bytes)", field.chunk_segment->length));
     } else if (is_packed) {
       line.append(fmt::color::yellow, "<packed>");
       line.append(" = \"");
