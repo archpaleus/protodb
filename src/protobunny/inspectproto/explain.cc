@@ -240,7 +240,6 @@ struct ExplainPrinter : public Printer {
       constexpr auto kMaxLen = 60;
       if (printable_str.length() > kMaxLen) {
         line.append(fmt::color::green, printable_str.substr(0, kMaxLen - 3));
-        line.append("...\"");
       } else {
         line.append(fmt::color::green, printable_str);
       }
