@@ -271,7 +271,6 @@ struct ExplainPrinter : public Printer {
   void EmitInvalidTag(const ExplainSegment& segment) {
     std::string data = std::string(segment.snippet.TryFlat().value());
 
-    // TODO: add a message with the reason why we failed to parse the tag
     Line line1;
     line1.append(fmt::color::red, " FAILED TO PARSE TAG: ");
     EmitLine(line1);
@@ -397,11 +396,12 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor);
 
 std::optional<Tag> ReadTag(const ExplainContext& context,
                            const Descriptor* descriptor) {
+  Console& console = context.explain_printer.console_;
   CodedInputStream& cis = context.cis;
   ExplainMark tag_mark(context);
   uint32_t tag = 0;
   if (!cis.ReadVarint32(&tag)) {
-    std::cerr << " [invalid tag] " << std::endl;
+    console.warning(" [invalid tag]");
     return std::nullopt;
   }
   const auto tag_segment = tag_mark.segment();
@@ -411,10 +411,9 @@ std::optional<Tag> ReadTag(const ExplainContext& context,
 
   ABSL_CHECK_LT(wire_type, 1 << 4);
   if (!WireTypeValid(wire_type)) {
-    std::cerr << absl::StrCat(
-                     absl::Hex(tag_mark.segment().start, absl::kZeroPad6))
-              << ": [ field " << field_number << ": invalid wire type "
-              << WireTypeLetter(wire_type) << " ] " << std::endl;
+    console.warning(StrCat(absl::Hex(tag_mark.segment().start, absl::kZeroPad6),
+                           ": [ field ", field_number, ": invalid wire type ",
+                           WireTypeLetter(wire_type), " ] "));
     return std::nullopt;
   }
 
@@ -573,6 +572,7 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
+  Console& console = context.explain_printer.console_;
   CodedInputStream& cis = context.cis;
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);
@@ -642,7 +642,7 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
         break;
       }
       default:
-        std::cerr << "unexpected wire type" << std::endl;
+        console.warning("unexpected wire type");
         if (!WireFormatLite::SkipField(&context.cis, tag->tag))
           return false;
     }
