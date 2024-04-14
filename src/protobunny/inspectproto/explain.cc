@@ -196,18 +196,29 @@ struct ExplainPrinter : public Printer {
 
   void EmitTagAndField(const Tag& tag, const Field& field) {
     Line line;
+
+    // offset
+    std::string start_offset =
+        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
+    line.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
+    
+    // hex data
     std::string data =
         fmt::format("{}{}", tag.segment.snippet.TryFlat().value(),
                     field.segment.snippet.TryFlat().value());
-    std::string start_offset =
-        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
     std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
-    std::string wire_type = WireTypeLetter(tag.wire_type);
-    line.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
     line.append(fmt::format("{:26}", hex_data));
+    
+    // wire type
+    std::string wire_type = WireTypeLetter(tag.wire_type);
     line.append(fmt::color::cornflower_blue, fmt::format(" {}", wire_type));
+    
+    // indent spacing
     line.append(fmt::format(" {}", indent_.to_string()));
+    
+    // field number
     line.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
+
     line.append(" : ");
     const bool is_packed =
         tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
