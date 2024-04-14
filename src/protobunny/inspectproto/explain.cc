@@ -26,6 +26,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "console/console.h"
 #include "fmt/color.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
@@ -38,10 +39,10 @@
 #include "protobunny/inspectproto/common.h"
 #include "protobunny/inspectproto/io/mark.h"
 #include "protobunny/inspectproto/io/printer.h"
-#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
+using ::absl::StrCat;
 using ::console::Console;
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::EnumDescriptor;
@@ -66,7 +67,7 @@ static std::string WireTypeLetter(int wire_type) {
     case 5:
       return "I";  // INT
     default:
-      return absl::StrCat(wire_type);
+      return StrCat(wire_type);
   }
 }
 static std::string WireTypeName(int wire_type) {
@@ -84,7 +85,7 @@ static std::string WireTypeName(int wire_type) {
     case 5:
       return "I32";
     default:
-      return absl::StrCat(wire_type);
+      return StrCat(wire_type);
   }
 }
 static bool WireTypeValid(int wire_type) {
@@ -162,7 +163,6 @@ struct Field {
   // bool is_valid_ut8 = false;  // TODO
 };
 
-
 struct ExplainPrinter : public Printer {
   using Printer::Printer;
 
@@ -184,7 +184,7 @@ struct ExplainPrinter : public Printer {
     }
     if (isprint(c))
       return std::string(1, c);
-    return absl::StrCat("\\x", absl::Hex(c, absl::kZeroPad2));
+    return StrCat("\\x", absl::Hex(c, absl::kZeroPad2));
   }
   std::string PrintableString(std::string_view input) {
     std::stringstream ss;
@@ -199,23 +199,23 @@ struct ExplainPrinter : public Printer {
 
     // offset
     std::string start_offset =
-        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
+        StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
     line.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
-    
+
     // hex data
     std::string data =
         fmt::format("{}{}", tag.segment.snippet.TryFlat().value(),
                     field.segment.snippet.TryFlat().value());
-    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+    std::string hex_data = StrCat("[", BinToHex(data, 8), "]");
     line.append(fmt::format("{:26}", hex_data));
-    
+
     // wire type
     std::string wire_type = WireTypeLetter(tag.wire_type);
     line.append(fmt::color::cornflower_blue, fmt::format(" {}", wire_type));
-    
+
     // indent spacing
     line.append(fmt::format(" {}", indent_.to_string()));
-    
+
     // field number
     line.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
 
@@ -233,7 +233,8 @@ struct ExplainPrinter : public Printer {
       }
       line.append(fmt::color::yellow, field.name);
       line.append(":  ");
-      line.append(fmt::color::purple, fmt::format("({} bytes)", field.chunk_segment->length));
+      line.append(fmt::color::purple,
+                  fmt::format("({} bytes)", field.chunk_segment->length));
     } else if (is_packed) {
       line.append(fmt::color::yellow, "<packed>");
       line.append(" = \"");
@@ -274,10 +275,11 @@ struct ExplainPrinter : public Printer {
     Line line1;
     line1.append(fmt::color::red, " FAILED TO PARSE TAG: ");
     EmitLine(line1);
+
     Line line2;
     std::string start_offset =
-        absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6));
-    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+        StrCat(absl::Hex(segment.start, absl::kZeroPad6));
+    std::string hex_data = StrCat("[", BinToHex(data, 8), "]");
     line2.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
     line2.append(fmt::format("{:26}", hex_data));
     EmitLine(line2);
@@ -290,10 +292,11 @@ struct ExplainPrinter : public Printer {
     Line line1;
     line1.append(fmt::color::red, " FAILED TO PARSE FIELD: ");
     EmitLine(line1);
+
     Line line2;
     std::string start_offset =
-        absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
-    std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
+        StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
+    std::string hex_data = StrCat("[", BinToHex(data, 8), "]");
     line2.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
     line2.append(fmt::format("{:26}", hex_data));
     line2.append(fmt::format(" {}", indent_.to_string()));
@@ -302,7 +305,7 @@ struct ExplainPrinter : public Printer {
     EmitLine(line2);
   }
 
-public:
+ public:
   Console console_;
 };
 
@@ -365,7 +368,7 @@ static const Descriptor* FindMessageType(Console& console,
   std::vector<std::string> all_message_names;
   db->FindAllMessageNames(&all_message_names);
 
-  const auto suffix = absl::StrCat(".", message_type);
+  const auto suffix = StrCat(".", message_type);
   std::vector<std::string> matches;
   for (const auto& name : all_message_names) {
     if (absl::EndsWith(name, suffix)) {
@@ -374,16 +377,17 @@ static const Descriptor* FindMessageType(Console& console,
   }
 
   if (matches.empty()) {
-    console.warning(absl::StrCat("No matching type for ", message_type));
+    console.warning(StrCat("No matching type for ", message_type));
     return nullptr;
   } else if (matches.size() == 1) {
-    return pool->FindMessageTypeByName(matches[0]);
+    const auto& match = matches[0];
+    return pool->FindMessageTypeByName(match);
   } else {
     // Can't decide.
-    std::cerr << "Found multiple messages matching " << message_type << ":"
-              << std::endl;
+    console.warning(
+        StrCat("Found multiple messages matching ", message_type, ":"));
     for (const auto& match : matches) {
-      std::cerr << match << ":" << std::endl;
+      console.warning(match);
     }
     return nullptr;
   }
@@ -474,7 +478,7 @@ std::optional<Field> ReadField_LengthDelimited(const ExplainContext& context,
         return Field{
             .segment = length_segment,
             .chunk_segment = chunk_segment,
-            .cpp_type = absl::StrCat(field_descriptor->cpp_type_name(), "[]"),
+            .cpp_type = StrCat(field_descriptor->cpp_type_name(), "[]"),
             .name = field_descriptor->name(),
             .value = (std::string)BinToHex(chunk_segment.snippet),
         };
@@ -525,8 +529,8 @@ std::optional<Field> ReadField_VarInt(const ExplainContext& context,
       .segment = field_mark.segment(),
       .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
       .name = field_descriptor ? field_descriptor->name() : "<varint>",
-      .value = absl::StrCat(
-          varint),  // TODO: provide different interpretations: zig-zag
+      .value =
+          StrCat(varint),  // TODO: provide different interpretations: zig-zag
   };
 }
 
@@ -544,8 +548,8 @@ std::optional<Field> ReadField_Fixed32(const ExplainContext& context,
       .segment = field_mark.segment(),
       .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "",
       .name = field_descriptor ? field_descriptor->name() : "<fixed32>",
-      .value = absl::StrCat(
-          fixed32),  // TODO: provide different interpretations: float
+      .value =
+          StrCat(fixed32),  // TODO: provide different interpretations: float
   };
 }
 
@@ -563,8 +567,8 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
       .segment = field_mark.segment(),
       .cpp_type = field_descriptor ? field_descriptor->cpp_type_name() : "?",
       .name = field_descriptor ? field_descriptor->name() : "<fixed64>",
-      .value = absl::StrCat(
-          fixed64),  // TODO: provide different interpretations: double
+      .value =
+          StrCat(fixed64),  // TODO: provide different interpretations: double
   };
 }
 
@@ -647,10 +651,8 @@ bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
   return true;
 }
 
-
-
-bool Explain(Console& console, const absl::Cord& cord,
-             DescriptorDatabase* db, const ExplainOptions& options) {
+bool Explain(Console& console, const absl::Cord& cord, DescriptorDatabase* db,
+             const ExplainOptions& options) {
   ABSL_CHECK(!options.decode_type.empty());
   ABSL_CHECK(db);
 
