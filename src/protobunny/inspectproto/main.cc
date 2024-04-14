@@ -9,6 +9,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "console/console.h"
 #include "fmt/core.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
@@ -25,7 +26,6 @@
 #include "protobunny/inspectproto/explain.h"
 #include "protobunny/inspectproto/guess.h"
 #include "protobunny/inspectproto/importer.h"
-#include "console/console.h"
 
 namespace protobunny::inspectproto {
 
@@ -161,7 +161,7 @@ int Run(int argc, char* argv[]) {
   absl::InitializeLog();
 
   console::Console console;
-  
+
   // This will only output if we are actually running a debug build.
   console.debug("Running debug build");
 
@@ -209,7 +209,8 @@ int Run(int argc, char* argv[]) {
       console.set_enable_ansi_sequences(false);
     } else if (option == "--skip") {
       if (!absl::SimpleAtoi(param_pair.second, &options.skip_bytes)) {
-        console.error(fmt::format("Invalid input for skip: {}", param_pair.second));
+        console.error(
+            fmt::format("Invalid input for skip: {}", param_pair.second));
         return -4;
       }
     } else if (option == "--proto_path" || option == "-I") {
@@ -259,7 +260,7 @@ int Run(int argc, char* argv[]) {
     console.error("No input provided.");
     return -1;
   }
-  //options.input_filepath = args.inputs[0];
+  // options.input_filepath = args.inputs[0];
   if (options.input_filepath == "-") {
     options.input_filepath = "/dev/stdin";
   }

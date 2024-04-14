@@ -3,7 +3,6 @@
 
 using namespace console;
 
-
 int main(int argc, char** argv) {
   console::Console console;
 

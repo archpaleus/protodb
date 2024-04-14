@@ -1,12 +1,12 @@
 #include "console/console.h"
 
-#include "fmt/color.h"
-#include "fmt/core.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <optional>
 #include <string>
+
+#include "fmt/color.h"
+#include "fmt/core.h"
 
 namespace console {
 
@@ -16,7 +16,7 @@ static constexpr bool kEnableDebug = true;
 #else
 static constexpr bool kEnableDebug = false;
 #endif
-}
+}  // namespace
 
 std::optional<std::string> getenv_(std::string_view name) {
   const char* value = getenv(name.data());

@@ -1,6 +1,5 @@
 #include "protobunny/inspectproto/guess.h"
 
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -298,7 +297,8 @@ static int ScoreMessageAgainstParsedFields(
   return score;
 }
 
-bool Guess(Console& console, const absl::Cord& data, DescriptorDatabase* descriptor_db,
+bool Guess(Console& console, const absl::Cord& data,
+           DescriptorDatabase* descriptor_db,
            std::vector<std::string>* matches) {
   auto pool = std::make_unique<DescriptorPool>(descriptor_db, nullptr);
 
