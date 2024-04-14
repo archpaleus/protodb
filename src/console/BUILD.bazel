@@ -1,6 +1,6 @@
-cc_binary(
-    name = "test",
-    srcs = ["test.cc"],
+cc_test(
+    name = "console_test",
+    srcs = ["console_test.cc"],
     deps = [":console"],
 )
 
