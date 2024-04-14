@@ -194,7 +194,6 @@ struct ExplainPrinter : public Printer {
     return ss.str();
   }
 
-#if 1
   void EmitTagAndField(const Tag& tag, const Field& field) {
     Line line;
     std::string data =
@@ -258,77 +257,6 @@ struct ExplainPrinter : public Printer {
 
     EmitLine(line);
   }
-#else
-  void EmitTagAndField(const Tag& tag, const Field& field) {
-    std::string data = absl::StrCat(tag.segment.snippet.TryFlat().value(),
-                                    field.segment.snippet.TryFlat().value());
-    std::cout << absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6))
-              << std::setw(26) << absl::StrCat("[", BinToHex(data, 8), "]")
-              << " " << WireTypeLetter(tag.wire_type) << " "
-              << indent_spacing();
-    std::cout << termcolors::kBold << termcolors::kCyan;
-    std::cout << std::setw(4) << tag.field_number;
-    std::cout << termcolors::kReset << " : ";
-
-    const bool is_packed =
-        tag.field_descriptor ? tag.field_descriptor->is_packed() : false;
-    if (field.is_valid_message) {
-      if (!field.cpp_type.empty()) {
-        std::cout << field.cpp_type << " ";
-        std::cout << termcolors::kReset;
-      }
-      if (!field.message_type.empty()) {
-        std::cout << termcolors::kBold << termcolors::kWhite;
-        std::cout << field.message_type << " ";
-        std::cout << termcolors::kReset;
-      }
-      std::cout << termcolors::kYellow;
-      std::cout << field.name;
-      std::cout << termcolors::kReset;
-      std::cout << ":";
-      std::cout << termcolors::kMagenta;
-      if (field.chunk_segment->length == 1) {
-        std::cout << "  (" << field.chunk_segment->length << " byte)";
-      } else if (field.chunk_segment->length > 1) {
-        std::cout << "  (" << field.chunk_segment->length << " bytes)";
-      }
-      std::cout << termcolors::kReset;
-    } else if (is_packed) {
-      if (!field.cpp_type.empty()) {
-        std::cout << field.cpp_type << " ";
-        std::cout << termcolors::kReset;
-      }
-      std::cout << termcolors::kYellow << field.name << termcolors::kReset
-                << " = [" << termcolors::kGreen << field.value
-                << termcolors::kReset << "]";
-    } else if (tag.wire_type == WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-      if (!field.cpp_type.empty()) {
-        std::cout << field.cpp_type << " ";
-        std::cout << termcolors::kReset;
-      }
-      std::string printable_str = PrintableString(field.value);
-      std::cout << termcolors::kYellow << field.name << termcolors::kReset
-                << " = "
-                << "\"" << termcolors::kGreen;
-      constexpr auto kMaxLen = 60;
-      if (printable_str.length() > kMaxLen) {
-        std::cout << printable_str.substr(0, kMaxLen - 3) << termcolors::kReset
-                  << "...\"";
-      } else {
-        std::cout << printable_str << termcolors::kReset << "\"";
-      }
-    } else {
-      if (!field.cpp_type.empty()) {
-        std::cout << field.cpp_type << " ";
-        std::cout << termcolors::kReset;
-      }
-      std::cout << termcolors::kYellow << field.name << termcolors::kReset
-                << " = " << termcolors::kGreen << field.value
-                << termcolors::kReset;
-    }
-    std::cout << std::endl;
-  }
-#endif
 
   void EmitInvalidTag(const ExplainSegment& segment) {
     std::string data = std::string(segment.snippet.TryFlat().value());
@@ -336,6 +264,7 @@ struct ExplainPrinter : public Printer {
     // TODO: add a message with the reason why we failed to parse the tag
     Line line1;
     line1.append(fmt::color::red, " FAILED TO PARSE TAG: ");
+    EmitLine(line1);
     Line line2;
     std::string start_offset =
         absl::StrCat(absl::Hex(segment.start, absl::kZeroPad6));
@@ -351,6 +280,7 @@ struct ExplainPrinter : public Printer {
     // TODO: add a message with the reason why we failed to parse the tag
     Line line1;
     line1.append(fmt::color::red, " FAILED TO PARSE FIELD: ");
+    EmitLine(line1);
     Line line2;
     std::string start_offset =
         absl::StrCat(absl::Hex(tag.segment.start, absl::kZeroPad6));
