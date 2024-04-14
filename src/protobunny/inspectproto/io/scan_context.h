@@ -48,7 +48,7 @@ struct ScanContext {
   DescriptorPool* descriptor_pool;
   DescriptorDatabase* descriptor_database;
   Printer* printer;
-  std::optional<Printer::Indent> indent;
+  std::optional<Printer::Indent::IndentHold> indent;
 };
 
 }  // namespace protobunny::inspectproto

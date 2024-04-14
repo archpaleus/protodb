@@ -166,9 +166,7 @@ struct Field {
 struct ExplainPrinter : public Printer {
   using Printer::Printer;
 
-  ExplainPrinter(Console& console) : Printer(console_) {
-    indent_ = 0;
-  }
+  ExplainPrinter(Console& console) : Printer(console_) {}
   virtual ~ExplainPrinter() {}
 
   std::string PrintableChar(char c) {
@@ -210,7 +208,7 @@ struct ExplainPrinter : public Printer {
     line.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
     line.append(fmt::format("{:26}", hex_data));
     line.append(fmt::color::cornflower_blue, fmt::format(" {}", wire_type));
-    line.append(fmt::format(" {}", indent_spacing()));
+    line.append(fmt::format(" {}", indent_.to_string()));
     line.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
     line.append(" : ");
     const bool is_packed =
@@ -359,7 +357,7 @@ struct ExplainPrinter : public Printer {
     std::string hex_data = absl::StrCat("[", BinToHex(data, 8), "]");
     line2.append(fmt::color::olive_drab, fmt::format("{} ", start_offset));
     line2.append(fmt::format("{:26}", hex_data));
-    line2.append(fmt::format(" {}", indent_spacing()));
+    line2.append(fmt::format(" {}", indent_.to_string()));
     line2.append(fmt::color::cyan, fmt::format("{:4}", tag.field_number));
     line2.append(WireTypeName(tag.wire_type));
     EmitLine(line2);
@@ -632,7 +630,6 @@ std::optional<Field> ReadField_Fixed64(const ExplainContext& context,
 }
 
 bool ScanFields(const ExplainContext& context, const Descriptor* descriptor) {
-  Console& console = context.explain_printer.console_;
   CodedInputStream& cis = context.cis;
   while (!cis.ExpectAtEnd() && cis.BytesUntilTotalBytesLimit()) {
     ExplainMark tag_field_mark(context);

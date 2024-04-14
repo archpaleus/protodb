@@ -16,8 +16,8 @@
 namespace protobunny::inspectproto {
 
 using console::Console;
-using console::Span;
 using console::Line;
+using console::Span;
 
 struct Printer {
   Printer(Console& console) : console_(console) {}
@@ -31,37 +31,39 @@ struct Printer {
   virtual void Emit(const Span& span) { console_.emit(span.to_string(console_.enable_ansi_sequences())); }
   virtual void EmitLine(const Line& line) { console_.print(line.to_string(console_.enable_ansi_sequences())); }
 
-  void indent() {
-    ++indent_;
-  };
-  void outdent() {
-    --indent_;
-    assert(indent_ >= 0);
-  }
-  std::string indent_spacing(const std::string_view spacer = "  ") {
-    std::string spacing;
-    for (int i = 0; i < indent_; ++i) spacing += spacer;
-    return spacing;
-  }
-
-  // RAII object to track indenting and unindenting.
   struct Indent {
-    Indent(Printer& printer) : p_(printer) {
-      p_.indent();
+    // RAII object to track indenting and unindenting.
+    struct IndentHold {
+      IndentHold(Indent& indenter) : i_(indenter) {
+        ++i_;
+      }
+      ~IndentHold() {
+        --i_;
+      }
+      Indent& i_;
+    };
+    int& operator++() {
+      return ++indent_;
     }
-    ~Indent() {
-      p_.outdent();
+    int& operator--() {
+      --indent_;
+      assert(indent_ >= 0);
+      return indent_;
     }
-
+    std::string to_string(const std::string_view spacer = "  ") {
+      std::string spacing;
+      for (int i = 0; i < indent_; ++i) spacing += spacer;
+      return spacing;
+    }
    protected:
-    Printer& p_;
+    int indent_ = 0;
   };
-  Indent WithIndent() {
-    return Indent(*this);
+  auto WithIndent() {
+    return Indent::IndentHold(indent_);
   }
 
  protected:
-  int indent_ = 0;
+  Indent indent_;
   Console& console_;
 };
 
