@@ -1,8 +1,8 @@
 #include <cassert>
 #include <cstddef>
-#include <type_traits>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 // # Based on value of macro AK_TOOLKIT_CONFIG_USING_STRING_VIEW we decide if
 // and how

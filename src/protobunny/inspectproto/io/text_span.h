@@ -3,9 +3,9 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <optional>
 #include <string>
 #include <variant>
@@ -29,7 +29,6 @@ struct Span {
     }
   }
 };
-
 
 struct Line {
   std::vector<Span> spans;

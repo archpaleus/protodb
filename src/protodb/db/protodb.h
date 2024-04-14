@@ -10,7 +10,6 @@
 #include <variant>
 #include <vector>
 
-//#include "google/protobuf/compiler/importer.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/port.h"

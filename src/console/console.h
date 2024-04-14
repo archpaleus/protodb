@@ -29,7 +29,7 @@ struct Console {
   void info(const std::string& msg);
 
   // Messages that may affect program behavior but do not prevent it from
-  // proceeding. 
+  // proceeding.
   void warning(const std::string& msg);
 
   // Informative message to the user that affect program behavior
@@ -39,12 +39,16 @@ struct Console {
   // Messages that precede immediate program termination.
   void fatal(const std::string& msg);
 
-  bool verbose() const { return verbose_; }
-  void set_verbose(bool verbose = true) { 
+  bool verbose() const {
+    return verbose_;
+  }
+  void set_verbose(bool verbose = true) {
     verbose_ = verbose;
   }
-  
-  bool enable_ansi_sequences() const { return enable_ansi_sequences_; }
+
+  bool enable_ansi_sequences() const {
+    return enable_ansi_sequences_;
+  }
   void set_enable_ansi_sequences(bool enabled = true) {
     enable_ansi_sequences_ = enabled;
   }
@@ -59,4 +63,3 @@ struct Console {
 };
 
 }  // namespace console
-

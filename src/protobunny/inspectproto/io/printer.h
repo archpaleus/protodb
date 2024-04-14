@@ -10,8 +10,8 @@
 #include <string>
 #include <variant>
 
-#include "fmt/color.h"
 #include "console/console.h"
+#include "fmt/color.h"
 
 namespace protobunny::inspectproto {
 
@@ -24,12 +24,20 @@ struct Printer {
   virtual ~Printer() {}
 
   // Emits text to the printer.
-  virtual void Emit(const std::string& str) { console_.emit(str); }
-  virtual void EmitLine(const std::string& str) { console_.print(str); }
+  virtual void Emit(const std::string& str) {
+    console_.emit(str);
+  }
+  virtual void EmitLine(const std::string& str) {
+    console_.print(str);
+  }
 
   // Emits formatted spans to the printer.
-  virtual void Emit(const Span& span) { console_.emit(span.to_string(console_.enable_ansi_sequences())); }
-  virtual void EmitLine(const Line& line) { console_.print(line.to_string(console_.enable_ansi_sequences())); }
+  virtual void Emit(const Span& span) {
+    console_.emit(span.to_string(console_.enable_ansi_sequences()));
+  }
+  virtual void EmitLine(const Line& line) {
+    console_.print(line.to_string(console_.enable_ansi_sequences()));
+  }
 
   struct Indent {
     // RAII object to track indenting and unindenting.
@@ -55,6 +63,7 @@ struct Printer {
       for (int i = 0; i < indent_; ++i) spacing += spacer;
       return spacing;
     }
+
    protected:
     int indent_ = 0;
   };
