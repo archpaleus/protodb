@@ -1,6 +1,6 @@
 # Proto Schema IDs
 
-Provides a unique identifiers for messages within a .proto closure that
+Provides unique identifiers for messages within a .proto closure that
 enables simpler ways to identify the format of a protobuf message across
 the wire.
 
@@ -29,31 +29,33 @@ message MyMessage {
 
 ```
 package protoid;
+
 message Any {
-  # We use higher tag numbers to make distinguishing the message easier.
-  # The first four IDs are reserved and always unused.  This makes it
-  # easy to rule out any proto as a type mismatch if it's using
-  # these field numbers, which is the majority of protos we'll see.
+  // We use higher tag numbers to make distinguishing the message easier.
+  // The first four IDs are reserved and always unused.  This makes it
+  // easy to rule out any proto as a type mismatch if it's using
+  // these field numbers, which is the majority of protos we'll see.
   reserved 1-4;
 
   // ID may be chosen as either a 32-bit ID or a 64-bit id.
   oneof id {
-    # 32-bit ID of the message type.
+    // 32-bit ID of the message type.
     fixed32 id32 = 5;
 
-    # 64-bit ID of the message type.
+    // 64-bit ID of the message type.
     fixed64 id64 = 6;
   }
 
-  # Binary encoding data of the serialized message.
+  // Binary encoding data of the serialized message.
   bytes message = 7;
 
-  # An optional typename for the message, eg "google.protobuf.Empty".
-  # Useful for debugging or when the ID will be unavailable.
+  // An optional typename for the message, eg "google.protobuf.Empty".
+  // Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
+```
 
-
+```
 protoid_any: {
   id64: 4560029131573256278
   message: ...
@@ -76,35 +78,36 @@ message AnySet {
 ```
 
 ```
+// All fields must be consistent with Any, except for 'message' which is repeated.
 message AnyArray {
-  # All fields must be consistent with Any, except for 'message' which is repeated.
 
   reserved 1-4;
 
   // ID may be chosen as either a 32-bit ID or a 64-bit id.
   oneof id {
-    # 32-bit ID of the message type.
+    // 32-bit ID of the message type.
     fixed32 id32 = 5;
 
-    # 64-bit ID of the message type.
+    // 64-bit ID of the message type.
     fixed64 id64 = 6;
   }
 
-  # Binary encoding data of the serialized messages.
+  // Binary encoding data of the serialized messages.
   repeated bytes message = 7;
 
-  # An optional typename for the message, eg "google.protobuf.Empty".
-  # Useful for debugging or when the ID will be unavailable.
+  // An optional typename for the message, eg "google.protobuf.Empty".
+  // Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
 ```
 
+# Variants
 ```
-# Variant should remain identical to `Any` in wire-format.
-# Variants are annotated in the schema to limit to a specific
-# set of protos that can serialized for the proto.
-# Parsing is less restrictive and will deserialize to any type
-# that can be found in the mapping.
+// Variant should remain identical to `Any` in wire-format.
+// Variants are annotated in the schema to limit to a specific
+// set of protos that can serialized for the proto.
+// Parsing is less restrictive and will deserialize to any type
+// that can be found in the mapping.
 message Variant {
   reserved 1-4;
 
@@ -124,7 +127,6 @@ message Variant {
   # Useful for debugging or when the ID will be unavailable.
   string type_name = 76;
 }
-
 ```
 
 ```

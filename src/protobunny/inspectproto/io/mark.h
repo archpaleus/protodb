@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_MARK_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_MARK_H__
+#pragma once
 
 #include <ctype.h>
 #include <stdio.h>
@@ -38,5 +37,3 @@ struct Mark {
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_MARK_H__

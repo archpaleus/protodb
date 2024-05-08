@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_PARSING_SCANNER_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_PARSING_SCANNER_H__
+#pragma once
 
 #include <ctype.h>
 #include <stdio.h>
@@ -23,15 +22,20 @@ struct ParsedField {
   const Segment tag_segment;
   const Segment field_segment;
 
+  // Tag Information
   const uint32_t field_number;
   const WireFormatLite::WireType wire_type;
 
+  // Information applicable only for length-delimited records.
   struct LengthDelimited {
-    // This refers to the data in the length-delimited field, exclusive of the
-    // "length" prefix.
-    std::optional<Segment> segment;
+    // This refers to the data that is the "value" of the length-delimited
+    // field, exclusive of the "length" prefix.
+    std::optional<const Segment> segment;
 
-    uint32_t length = 0;  // The length of the length-delimited field.
+    // The length of the length-delimited field.
+    const uint32_t length;
+
+    // A possible set of fields parsed within the length-delimited value.
     std::vector<ParsedField> message_fields;
 
     // True if the data portion is non-zero in size and parseable
@@ -48,19 +52,19 @@ struct ParsedField {
   std::optional<const LengthDelimited> length_delimited;
 };
 
-// Represents a grouping of parsed fields.
+// Represents a grouping of parsed fields.  The Group maintains
+// pointers to ParsedField objects, but does not own them.
 struct ParsedFieldsGroup {
-  const uint32_t field_number = -1;
+  const uint32_t field_number;
   const WireFormatLite::WireType wire_type;
   const bool is_repeated = false;
-  bool is_message_likely = false;
 
   // A list of all ParsedField records grouped to this field number.
   std::vector<const ParsedField*> fields;
+};
 
-  std::string to_string() const;
+struct ParseError {
+
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_PARSING_SCANNER_H__

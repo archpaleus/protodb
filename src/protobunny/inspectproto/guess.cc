@@ -300,19 +300,23 @@ static int ScoreMessageAgainstParsedFields(
 bool Guess(Console& console, const absl::Cord& data,
            DescriptorDatabase* descriptor_db,
            std::vector<std::string>* matches) {
-  auto pool = std::make_unique<DescriptorPool>(descriptor_db, nullptr);
-
-  CordInputStream cord_input(&data);
-  ZeroCopyInputStream* zcis = &cord_input;
-  CodedInputStream cis(zcis);
-
   if (data.empty()) {
     console.info("zero-length input");
     return true;
   }
+
+  // Set up an input stream on the input data.
+  CordInputStream cord_input(&data);
+  ZeroCopyInputStream* zcis = &cord_input;
+  CodedInputStream cis(zcis);
+  cis.SetTotalBytesLimit(data.size());
+
+  // Create a new context for scanning.
+  auto pool = std::make_unique<DescriptorPool>(descriptor_db, nullptr);
   GuessContext context{cis, &data, nullptr, pool.get(), descriptor_db};
 
-  cis.SetTotalBytesLimit(data.size());
+  // Scan all fields in the input data, without recursively scanning
+  // messages.
   std::vector<ParsedField> fields;
   if (!ScanInputForFields(context, cis, fields)) {
     context.DebugLog(
@@ -325,14 +329,19 @@ bool Guess(Console& console, const absl::Cord& data,
   }
   context.DebugLog(absl::StrCat("scan ok "));
 
+  // Create a list of pointers that we can modify.
   std::vector<const ParsedField*> field_ptrs;
   for (const ParsedField& field : fields) field_ptrs.push_back(&field);
 
+  // Grab the full set of names in the descriptor database.  This
+  // cab be a slow-ish operation if the database is large.
   std::vector<std::string> search_set;
   descriptor_db->FindAllMessageNames(&search_set);
 
+  // For every descriptor we have, match the fields against the descriptor
+  // and create a heuristic score for its matching potential.
   std::vector<std::pair<int, std::string>> scores;
-  for (std::string message : search_set) {
+  for (const std::string& message : search_set) {
     const Descriptor* descriptor =
         context.descriptor_pool->FindMessageTypeByName(message);
     ABSL_CHECK(descriptor);

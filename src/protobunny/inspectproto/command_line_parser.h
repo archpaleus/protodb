@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "absl/status/statusor.h"
+#include "protobunny/common/base.h"
 #include "protobunny/inspectproto/common.h"
 
 namespace protobunny::inspectproto {

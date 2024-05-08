@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_COMMON_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_COMMON_H__
+#pragma once
 
 #include <optional>
 #include <string>
@@ -9,24 +8,16 @@
 
 namespace protobunny::inspectproto {
 
-struct NoCopy {
-  NoCopy() = default;
-  NoCopy(const NoCopy&) = delete;
-};
+// Returns true if the content consistents only of printable ASCII characters.
+bool IsAsciiPrintable(std::string_view data);
+bool IsAsciiPrintable(absl::Cord data);
 
-struct NoMove {
-  NoMove() = default;
-  NoMove(NoMove&&) noexcept = delete;
-};
+// Returns true if the provided data is valid binary-encoded protobuf
+// data that can be parsed as a message.
+bool IsParseableAsMessage(absl::Cord data);
 
-bool IsAsciiPrintable(std::string_view str);
-bool IsAsciiPrintable(absl::Cord str);
-
-bool IsParseableAsMessage(absl::Cord str);
-
+// Reads contents of a file and tries to parse into the given message.
 bool ParseProtoFromFile(const std::string& filepath,
                         google::protobuf::Message* message);
 
-}  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_COMMON_H__
+}  // namespace protobunny

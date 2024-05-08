@@ -1,15 +1,20 @@
 # Projects
 
 - protobunny/any
-- protobunny/record
-- protobunny/codex
-- protobunny/prototools-python
-- protobunny/protobunny-tools-cpp
+- protobunny/descriptortool
+- protobunny/inspectproto
 - protobunny/printproto
 - protobunny/proto-database
-- protobunny/proto-schema-filter
 - protobunny/proto-schema-id
-- protobunny/protoquery
+- protobunny/protoquery ["pq"]
+- protobunny/record
+
+## alt names
+
+- protobunny/proto-schema-filter
+- protobunny/protobunny-tools-cpp
+- protobunny/prototools-python
+- protobunny/codex
 
 # Naming Options
 

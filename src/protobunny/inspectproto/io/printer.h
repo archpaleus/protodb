@@ -50,6 +50,7 @@ struct Printer {
       }
       Indent& i_;
     };
+
     int& operator++() {
       return ++indent_;
     }

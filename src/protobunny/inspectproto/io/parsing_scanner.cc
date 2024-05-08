@@ -17,6 +17,7 @@
 
 namespace protobunny::inspectproto {
 
+#if 0
 static std::string WireTypeLetter(int wire_type) {
   switch (wire_type) {
     case 0:
@@ -37,8 +38,9 @@ static std::string WireTypeLetter(int wire_type) {
 }
 
 std::string ParsedFieldsGroup::to_string() const {
-  return absl::StrCat(field_number, WireTypeLetter(wire_type),
-                      is_message_likely ? "M" : "S", is_repeated ? "*" : "");
+  return absl::StrCat(field_number, WireTypeLetter(wire_type), "Z",
+                      is_repeated ? "*" : "");
 }
+#endif
 
 }  // namespace protobunny::inspectproto

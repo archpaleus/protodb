@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IO_SCAN_CONTEXT_H__
-#define PROTOBUNNY_INSPECTPROTO_IO_SCAN_CONTEXT_H__
+#pragma once
 
 #include <ctype.h>
 #include <stdio.h>
@@ -52,5 +51,3 @@ struct ScanContext {
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IO_SCAN_CONTEXT_H__

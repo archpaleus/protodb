@@ -3,7 +3,7 @@
 
 namespace protobunny::queryproto {
 
-int ProtoqueryMain(int argc, char* argv[]) {
+int Run(int argc, char* argv[]) {
   absl::InitializeLog();
 
   // CommandLineInterface cli;
@@ -15,5 +15,5 @@ int ProtoqueryMain(int argc, char* argv[]) {
 }  // namespace protobunny::queryproto
 
 int main(int argc, char* argv[]) {
-  return ::protobunny::queryproto::ProtoqueryMain(argc, argv);
+  return ::protobunny::queryproto::Run(argc, argv);
 }
