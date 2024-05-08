@@ -1,19 +1,14 @@
-# Bazel
-/bazel-*
-
-# VS Code
-.vscode/
-
 # ProtoDB local dir
 .protodb*/
 
-# macOS
-.DS_Store
-
-# Vim
-.*.swp
-
 # Binary-encoded Protobuf Files
 *.bin
-*.pb
 *.binproto
+*.pb
+
+# Working files
+.*.swp
+.DS_Store
+.mypy_cache
+/.vscode/
+/bazel-*
