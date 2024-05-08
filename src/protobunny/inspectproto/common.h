@@ -20,4 +20,4 @@ bool IsParseableAsMessage(absl::Cord data);
 bool ParseProtoFromFile(const std::string& filepath,
                         google::protobuf::Message* message);
 
-}  // namespace protobunny
+}  // namespace protobunny::inspectproto

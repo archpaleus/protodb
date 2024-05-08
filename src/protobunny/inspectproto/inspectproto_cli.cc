@@ -37,18 +37,20 @@ using ::absl::StrCat;
 using ::console::Console;
 using ::google::protobuf::FileDescriptorSet;
 
-Status AddToSimpleDescriptorDatabase(SimpleDescriptorDatabase* database, const FileDescriptorProto& file_descriptor) {
-    const auto& name = file_descriptor.name();
-    FileDescriptorProto previously_added_file_descriptor;
-    if (database->FindFileByName(name, &previously_added_file_descriptor)) {
-      //std::cerr << "warning: skiping previously added file: " << name
-      //          << std::endl;
-      return absl::OkStatus();
-    }
-    if (!database->Add(file_descriptor)) {
-      //std::cerr << "Unable to add " << name << std::endl;
-      return absl::InvalidArgumentError(StrCat("Unable to add ", name));
-    }
+Status AddToSimpleDescriptorDatabase(
+    SimpleDescriptorDatabase* database,
+    const FileDescriptorProto& file_descriptor) {
+  const auto& name = file_descriptor.name();
+  FileDescriptorProto previously_added_file_descriptor;
+  if (database->FindFileByName(name, &previously_added_file_descriptor)) {
+    //std::cerr << "warning: skiping previously added file: " << name
+    //          << std::endl;
+    return absl::OkStatus();
+  }
+  if (!database->Add(file_descriptor)) {
+    //std::cerr << "Unable to add " << name << std::endl;
+    return absl::InvalidArgumentError(StrCat("Unable to add ", name));
+  }
 }
 
 // Adds each file in a FileDescriptorSet to a descriptor database.
@@ -70,6 +72,7 @@ void AddToSimpleDescriptorDatabase(
   }
 }
 
+// Modified from src/google/protobuf/compiler/command_line_interface.cc
 bool ParseInputFiles(std::vector<std::string> input_files,
                      DescriptorPool* descriptor_pool,
                      std::vector<const FileDescriptor*>* parsed_files) {
@@ -99,8 +102,7 @@ bool ParseInputFiles(std::vector<std::string> input_files,
 }
 
 bool ImportProtoFilesToSimpleDatabase(
-    Console& console,
-    SimpleDescriptorDatabase* database,
+    Console& console, SimpleDescriptorDatabase* database,
     const std::vector<std::string>& input_paths) {
   auto custom_source_tree = std::make_unique<CustomSourceTree>();
   std::unique_ptr<ErrorPrinter> error_collector;

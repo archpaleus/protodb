@@ -63,8 +63,6 @@ struct ParsedFieldsGroup {
   std::vector<const ParsedField*> fields;
 };
 
-struct ParseError {
-
-};
+struct ParseError {};
 
 }  // namespace protobunny::inspectproto
