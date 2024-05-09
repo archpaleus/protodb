@@ -39,8 +39,7 @@
 //
 // This file is the public interface to the .proto file parser.
 
-#ifndef PROTOBUNNY_COMMON_SOURCE_TREE_H__
-#define PROTOBUNNY_COMMON_SOURCE_TREE_H__
+#pragma once
 
 #include <string>
 #include <utility>
@@ -194,5 +193,3 @@ class CustomSourceTree : public SourceTree {
 };
 
 }  // namespace protobunny
-
-#endif  // PROTOBUNNY_COMMON_SOURCE_TREE_H__

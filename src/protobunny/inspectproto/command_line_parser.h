@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_COMMAND_LINE_PARSE_H_
-#define PROTOBUNNY_INSPECTPROTO_COMMAND_LINE_PARSE_H_
+#pragma once
 
 #include <optional>
 #include <span>
@@ -61,5 +60,3 @@ struct CommandLineParser : NoCopy {
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_COMMAND_LINE_PARSE_H_

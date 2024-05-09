@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_GUESS_H__
-#define PROTOBUNNY_INSPECTPROTO_GUESS_H__
+#pragma once
 
 #include <span>
 #include <string>
@@ -18,5 +17,3 @@ bool Guess(Console& console, const absl::Cord& data,
            std::vector<std::string>* matches);
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_GUESS_H__

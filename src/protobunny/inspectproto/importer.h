@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_IMPORTER_H__
-#define PROTOBUNNY_INSPECTPROTO_IMPORTER_H__
+#pragma once
 
 #include <span>
 #include <string>
@@ -144,5 +143,3 @@ class ErrorPrinter : public MultiFileErrorCollector,
 };
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_IMPORTER_H__

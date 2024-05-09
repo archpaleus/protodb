@@ -1,5 +1,4 @@
-#ifndef PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
-#define PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
+#pragma once
 
 #include <span>
 #include <string>
@@ -21,5 +20,3 @@ bool Explain(Console& console, const absl::Cord& cord, DescriptorDatabase* db,
              const ExplainOptions& options);
 
 }  // namespace protobunny::inspectproto
-
-#endif  // PROTOBUNNY_INSPECTPROTO_EXPLAIN_H__
