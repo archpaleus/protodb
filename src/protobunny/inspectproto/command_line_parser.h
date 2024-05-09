@@ -11,11 +11,16 @@
 
 namespace protobunny::inspectproto {
 
-using CommandLineParam = std::pair<std::string, std::string>;
 struct CommandLineArgs {
-  std::vector<CommandLineParam> params;
+  using Param = std::pair<std::string, std::string>;
+
+  // command line flags
+  std::vector<Param> params;
+
+  // .proto files provided on the command line
   std::vector<std::string> inputs;
 };
+using CommandLineParam = CommandLineArgs::Param;
 
 // The following two are equivalent when using a phsyical file path
 //   inspectproto src//foo.proto

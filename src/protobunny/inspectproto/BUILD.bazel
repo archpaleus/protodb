@@ -8,7 +8,7 @@ cc_library(
         "explain.cc",
         "guess.cc",
         "importer.cc",
-        "inspectproto_cli.cc",
+        "inspectproto.cc",
     ],
     hdrs = [
         "command_line_parser.h",
@@ -16,7 +16,7 @@ cc_library(
         "explain.h",
         "guess.h",
         "importer.h",
-        "inspectproto_cli.h",
+        "inspectproto.h",
     ],
     include_prefix = "protobunny/inspectproto",
     strip_include_prefix = "",
