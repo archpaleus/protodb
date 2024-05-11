@@ -7,7 +7,6 @@ cc_library(
         "common.cc",
         "explain.cc",
         "guess.cc",
-        "importer.cc",
         "inspectproto.cc",
     ],
     hdrs = [
@@ -15,7 +14,6 @@ cc_library(
         "common.h",
         "explain.h",
         "guess.h",
-        "importer.h",
         "inspectproto.h",
     ],
     include_prefix = "protobunny/inspectproto",

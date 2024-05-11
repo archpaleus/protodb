@@ -8,11 +8,12 @@
 #include "google/protobuf/io/io_win32.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/stubs/common.h"
+#include "protobunny/common/importer.h"
+#include "protobunny/common/error_printer.h"
 #include "protobunny/inspectproto/command_line_parser.h"
 #include "protobunny/inspectproto/common.h"
 #include "protobunny/inspectproto/explain.h"
 #include "protobunny/inspectproto/guess.h"
-#include "protobunny/inspectproto/importer.h"
 
 namespace protobunny::inspectproto {
 
