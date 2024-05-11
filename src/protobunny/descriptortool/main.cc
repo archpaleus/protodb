@@ -1,4 +1,5 @@
+#include "protobunny/descriptortool/descriptortool.h"
 
-int main(void) {
-  return 0;
+int main(int argc, char* argv[]) {
+  return ::protobunny::descriptortool::Run(argc, argv);
 }

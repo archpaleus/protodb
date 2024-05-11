@@ -1,20 +1,15 @@
-#include "protobunny/inspectproto/inspectproto.h"
+#include "protobunny/descriptortool/descriptortool.h"
 
 #include "absl/strings/str_split.h"
 #include "console/console.h"
 #include "fmt/core.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "google/protobuf/io/io_win32.h"
+#include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/stubs/common.h"
-#include "protobunny/inspectproto/command_line_parser.h"
-#include "protobunny/inspectproto/common.h"
-#include "protobunny/inspectproto/explain.h"
-#include "protobunny/inspectproto/guess.h"
-#include "protobunny/inspectproto/importer.h"
+#include "protobunny/descriptortool/command_line_parser.h"
 
-namespace protobunny::inspectproto {
+namespace protobunny::descriptortool {
 
 using namespace google::protobuf;
 using namespace google::protobuf::io;
@@ -28,11 +23,9 @@ struct Options {
   std::string input_filepath = "/dev/stdin";
   std::vector<std::string> descriptor_set_in_paths;
   int skip_bytes = 0;
-
-  ExplainOptions explain_options;
 };
 
-struct InspectProto {
+struct DescriptorTool {
   Console console;
 
   void AddToSimpleDescriptorDatabase(
@@ -96,43 +89,14 @@ struct InspectProto {
   bool ImportProtoFilesToSimpleDatabase(
       Console& console, SimpleDescriptorDatabase* database,
       const std::vector<std::string>& input_paths) {
-    auto custom_source_tree = std::make_unique<CustomSourceTree>();
-    std::unique_ptr<ErrorPrinter> error_collector;
-    error_collector.reset(new ErrorPrinter(custom_source_tree.get()));
-
-    // Add paths relative to the protoc executable to find the well-known types.
-    // AddDefaultProtoPaths(custom_source_tree.get());
-
-    std::vector<std::string> virtual_input_files;
-    if (!ProcessInputPaths(input_paths, custom_source_tree.get(), database,
-                           &virtual_input_files)) {
-      console.fatal("Failed to parse input params");
-      return -6;
-    }
-
-    auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
-        custom_source_tree.get(), database);
-    auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
-        source_tree_database.get(),
-        source_tree_database->GetValidationErrorCollector());
-
-    std::vector<const FileDescriptor*> parsed_files;
-    if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(),
-                         &parsed_files)) {
-      console.fatal("couldn't parse input files");
-      return -7;
-    }
-    AddToSimpleDescriptorDatabase(database, parsed_files);
-
-    // TODO: CHECK THIS
     return 0;
   }
 
   void PrintUsage(Console& c) {
     c.print(
-        "inspectproto - a tool for viewing binary-encoded Protocol Buffers");
+        "descriptortool - a tool for viewing binary-encoded Protocol Buffers");
     c.print("");
-    c.print("Usage: inspectproto -f <file> [options...] [proto files]");
+    c.print("Usage: descriptortool  [ <proto-files> ]");
     c.print("");
   }
 
@@ -140,12 +104,20 @@ struct InspectProto {
     c.print("Arguments:");
     c.print("  -i,--descriptor_set_in: descriptor sets to describe data");
     c.print("");
-    c.print("  --decode_type: decode using the given message type");
-    c.print("");
     c.print("  --nocolor: disable ANSI escape sequences in output");
   }
 
   int Run(int argc, char* argv[]) {
+    // If there are no arugments provided and stdin is connected to the terminal
+    // then show help text.
+    if (argc <= 1) {
+      if (isatty(STDIN_FILENO)) {
+        console.error("No input provided.");
+        PrintUsage(console);
+        return 0;
+      }
+    }
+
     // Parse the arugments given from the command line.
     CommandLineParser parser;
     auto maybe_args = parser.ParseArguments(argc, argv);
@@ -174,8 +146,6 @@ struct InspectProto {
         for (const auto& path : paths) {
           options.descriptor_set_in_paths.push_back(std::string(path));
         }
-      } else if (option == "--decode_type") {
-        options.explain_options.decode_type = param_pair.second;
       } else if (option == "-f" || option == "--file") {
         options.input_filepath = param_pair.second;
       } else if (option == "--skip") {
@@ -205,17 +175,7 @@ struct InspectProto {
     }
 
     // This will only output if we are actually running a debug build.
-    console.debug("Running debug build");
-
-    // If there are no arugments provided and stdin is connected to the terminal
-    // then show help text.
-    if (argc <= 1) {
-      if (isatty(STDIN_FILENO)) {
-        console.error("No input provided.");
-        PrintUsage(console);
-        return 0;
-      }
-    }
+    console.debug("running debug build");
 
     console.debug("creating descriptor database");
     auto simpledb = std::make_unique<SimpleDescriptorDatabase>();
@@ -230,6 +190,7 @@ struct InspectProto {
     // Load any descriptors sets specified from the command line.
     // TODO(bholmes): handle multiple descriptor sets
     FileDescriptorSet descriptor_set;
+#if 0
     if (!options.descriptor_set_in_paths.empty()) {
       const auto filepath = options.descriptor_set_in_paths[0];
       if (!ParseProtoFromFile(filepath, &descriptor_set)) {
@@ -237,6 +198,7 @@ struct InspectProto {
         return -2;
       }
     }
+#endif
 
     AddToSimpleDescriptorDatabase(simpledb.get(), descriptor_set);
 
@@ -256,49 +218,13 @@ struct InspectProto {
       ImportProtoFilesToSimpleDatabase(console, simpledb.get(), proto_files);
     }
 
-    // Read the input data.
-    absl::Cord data;
-    console.info(StrCat("Reading input from ", options.input_filepath));
-    auto fp = fopen(options.input_filepath.c_str(), "rb");
-    if (!fp) {
-      console.error(StrCat("Unable to open file: ", options.input_filepath));
-      return -3;
-    }
-    int fd = fileno(fp);
-    if (isatty(fd)) {
-      console.error("cannot read from TTY ");
-      return -4;
-    }
-
-    const int kMaxReadSize = 10 << 20;
-    FileInputStream in(fd);
-    in.Skip(options.skip_bytes);
-    in.ReadCord(&data, kMaxReadSize);
-    fclose(fp);
-
-    // If no decode type was given, try to guess one.
-    if (options.explain_options.decode_type.empty()) {
-      std::vector<std::string> matches;
-      Guess(console, data, simpledb.get(), &matches);
-      if (matches.empty()) {
-        options.explain_options.decode_type = "google.protobuf.Empty";
-      } else {
-        options.explain_options.decode_type = matches[0];
-        console.info(
-            StrCat("Guessed proto as ", options.explain_options.decode_type));
-      }
-    }
-
-    // Explain the input data.
-    Explain(console, data, simpledb.get(), options.explain_options);
-
-    return 0;
+    return -1;
   }
 };
 
 int Run(int argc, char* argv[]) {
-  InspectProto inspect_proto;
-  inspect_proto.Run(argc, argv);
+  DescriptorTool descriptor_tool;
+  return descriptor_tool.Run(argc, argv);
 }
 
-}  // namespace protobunny::inspectproto
+}  // namespace protobunny::descriptortool

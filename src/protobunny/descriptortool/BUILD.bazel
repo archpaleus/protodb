@@ -3,9 +3,19 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 
 cc_library(
     name = "descriptortool_lib",
+    srcs = [
+        "command_line_parser.cc",
+        "descriptortool.cc",
+    ],
+    hdrs = [
+        "command_line_parser.h",
+        "descriptortool.h",
+    ],
+    include_prefix = "protobunny/descriptortool",
+    strip_include_prefix = "",
     deps = [
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:initialize",
+        "//src/console",
+        "//src/protobunny/common",
         "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
     ],
 )
