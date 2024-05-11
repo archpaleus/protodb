@@ -67,12 +67,11 @@ absl::StatusOr<ArgPair> ParseNext(std::span<std::string>& argview) {
   ABSL_CHECK(!argview.empty());
 
   constexpr auto no_value_params = std::array<std::string_view, 6>{
-      "-h",
-      "--help",
-      "-v",
-      "--verbose",
-      "--color",
-      "--nocolor",
+      // clang-format off
+      "-h", "--help",
+      "-v", "--verbose",
+      "--color", "--nocolor",
+      // clang-format on
   };
   const auto& arg = *pop_front(argview).value();
   if (arg == "-") {
