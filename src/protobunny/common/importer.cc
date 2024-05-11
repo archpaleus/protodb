@@ -22,15 +22,11 @@
 #include "google/protobuf/io/printer.h"
 #include "google/protobuf/text_format.h"
 #include "protobunny/common/source_tree.h"
-#include "protobunny/inspectproto/guess.h"
 
-namespace protobunny::inspectproto {
+namespace protobunny {
 
 using ::google::protobuf::Descriptor;
-
-static bool FileIsReadable(std::string_view path) {
-  return (access(path.data(), F_OK) < 0);
-}
+using ::google::protobuf::DescriptorDatabase;
 
 static bool DirectoryExists(std::string_view path) {
   return std::filesystem::exists(path) && std::filesystem::is_directory(path);
@@ -113,7 +109,7 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
                                .input_path = input_param});
       }
     } else {
-      ABSL_LOG(INFO) << "old style input: " << input_param;
+      //ABSL_LOG(INFO) << "old style input: " << input_param;
       ambigous_input_files.push_back(input_param);
     }
   }

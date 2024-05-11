@@ -105,12 +105,12 @@ struct InputPathRoot {
 //     Open("bar/qux");
 //   the SourceTree will first try to open foo/bar/qux, then baz/bar/qux,
 //   returning the first one that opens successfully.
-class CustomSourceTree : public SourceTree {
+class ProtobunnySourceTree : public SourceTree {
  public:
-  CustomSourceTree();
-  CustomSourceTree(const CustomSourceTree&) = delete;
-  CustomSourceTree& operator=(const CustomSourceTree&) = delete;
-  ~CustomSourceTree() override;
+  ProtobunnySourceTree();
+  ProtobunnySourceTree(const ProtobunnySourceTree&) = delete;
+  ProtobunnySourceTree& operator=(const ProtobunnySourceTree&) = delete;
+  ~ProtobunnySourceTree() override;
 
   // Adds a path to a file that is on disk.
   void AddInputFile(const InputPathFile& file) {

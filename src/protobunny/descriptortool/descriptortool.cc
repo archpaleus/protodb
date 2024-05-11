@@ -7,6 +7,9 @@
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/descriptor_database.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "protobunny/common/error_printer.h"
+#include "protobunny/common/importer.h"
+#include "protobunny/common/source_tree.h"
 #include "protobunny/descriptortool/command_line_parser.h"
 
 namespace protobunny::descriptortool {
@@ -18,6 +21,7 @@ using ::absl::Status;
 using ::absl::StrCat;
 using ::console::Console;
 using ::google::protobuf::FileDescriptorSet;
+using ::google::protobuf::compiler::SourceTreeDescriptorDatabase;
 
 struct Options {
   std::string input_filepath = "/dev/stdin";
@@ -89,6 +93,34 @@ struct DescriptorTool {
   bool ImportProtoFilesToSimpleDatabase(
       Console& console, SimpleDescriptorDatabase* database,
       const std::vector<std::string>& input_paths) {
+        auto custom_source_tree = std::make_unique<ProtobunnySourceTree>();
+    std::unique_ptr<ErrorPrinter> error_collector;
+    error_collector.reset(new ErrorPrinter(custom_source_tree.get()));
+
+    // Add paths relative to the protoc executable to find the well-known types.
+    // AddDefaultProtoPaths(custom_source_tree.get());
+
+    std::vector<std::string> virtual_input_files;
+    if (!ProcessInputPaths(input_paths, custom_source_tree.get(), database,
+                           &virtual_input_files)) {
+      console.fatal("Failed to parse input params");
+      return -6;
+    }
+
+    auto source_tree_database = std::make_unique<SourceTreeDescriptorDatabase>(
+        custom_source_tree.get(), database);
+    auto source_tree_descriptor_pool = std::make_unique<DescriptorPool>(
+        source_tree_database.get(),
+        source_tree_database->GetValidationErrorCollector());
+
+    std::vector<const FileDescriptor*> parsed_files;
+    if (!ParseInputFiles(virtual_input_files, source_tree_descriptor_pool.get(),
+                         &parsed_files)) {
+      console.fatal("couldn't parse input files");
+      return -7;
+    }
+    AddToSimpleDescriptorDatabase(database, parsed_files);
+
     return 0;
   }
 
@@ -215,8 +247,17 @@ struct DescriptorTool {
     if (args.inputs.size() > 1) {
       std::vector<std::string> proto_files(args.inputs.begin() + 1,
                                            args.inputs.end());
+      for (const auto& f : proto_files) console.print(f);
       ImportProtoFilesToSimpleDatabase(console, simpledb.get(), proto_files);
     }
+
+    // DEBUG
+    std::vector<std::string> files;
+    simpledb->FindAllFileNames(&files);
+    for (const auto& f : files) {
+      console.print(f);
+    }
+    //DEBUG
 
     return -1;
   }

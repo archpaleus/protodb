@@ -23,6 +23,7 @@ using ::absl::Status;
 using ::absl::StrCat;
 using ::console::Console;
 using ::google::protobuf::FileDescriptorSet;
+using ::google::protobuf::compiler::SourceTreeDescriptorDatabase;
 
 struct Options {
   std::string input_filepath = "/dev/stdin";
@@ -96,7 +97,7 @@ struct InspectProto {
   bool ImportProtoFilesToSimpleDatabase(
       Console& console, SimpleDescriptorDatabase* database,
       const std::vector<std::string>& input_paths) {
-    auto custom_source_tree = std::make_unique<CustomSourceTree>();
+    auto custom_source_tree = std::make_unique<ProtobunnySourceTree>();
     std::unique_ptr<ErrorPrinter> error_collector;
     error_collector.reset(new ErrorPrinter(custom_source_tree.get()));
 

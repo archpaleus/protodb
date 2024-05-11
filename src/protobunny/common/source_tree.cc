@@ -156,12 +156,12 @@ static bool ApplyMapping(absl::string_view filename,
   return false;
 }
 
-CustomSourceTree::CustomSourceTree() {}
+ProtobunnySourceTree::ProtobunnySourceTree() {}
 
-CustomSourceTree::~CustomSourceTree() {}
+ProtobunnySourceTree::~ProtobunnySourceTree() {}
 
 #if 0
-void CustomSourceTree::MapPath(absl::string_view virtual_path,
+void ProtobunnySourceTree::MapPath(absl::string_view virtual_path,
                                absl::string_view disk_path) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_path << " -> " << disk_path;
 
@@ -170,8 +170,8 @@ void CustomSourceTree::MapPath(absl::string_view virtual_path,
 }
 #endif
 
-CustomSourceTree::DiskFileToVirtualFileResult
-CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
+ProtobunnySourceTree::DiskFileToVirtualFileResult
+ProtobunnySourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
                                         std::string* virtual_file,
                                         std::string* shadowing_disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << disk_file;
@@ -205,7 +205,7 @@ CustomSourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
   return SUCCESS;
 }
 
-bool CustomSourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
+bool ProtobunnySourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
                                              std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__;
 
@@ -214,16 +214,16 @@ bool CustomSourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
   return stream != nullptr;
 }
 
-ZeroCopyInputStream* CustomSourceTree::Open(absl::string_view filename) {
+ZeroCopyInputStream* ProtobunnySourceTree::Open(absl::string_view filename) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << filename;
   return OpenVirtualFile(filename, nullptr);
 }
 
-std::string CustomSourceTree::GetLastErrorMessage() {
+std::string ProtobunnySourceTree::GetLastErrorMessage() {
   return last_error_message_;
 }
 
-ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
+ZeroCopyInputStream* ProtobunnySourceTree::OpenVirtualFile(
     absl::string_view virtual_file, std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_file << " " << disk_file;
   if (virtual_file != CanonicalizePath(virtual_file) ||
@@ -264,7 +264,7 @@ ZeroCopyInputStream* CustomSourceTree::OpenVirtualFile(
   return nullptr;
 }
 
-ZeroCopyInputStream* CustomSourceTree::OpenDiskFile(
+ZeroCopyInputStream* ProtobunnySourceTree::OpenDiskFile(
     absl::string_view filename) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << filename;
 

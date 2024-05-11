@@ -1,24 +1,22 @@
 #pragma once
 
-#include <span>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/strings/string_view.h"
+#include "google/protobuf/compiler/importer.h"
+#include "google/protobuf/compiler/parser.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor_database.h"
+#include "google/protobuf/io/zero_copy_stream.h"
 #include "protobunny/common/source_tree.h"
 
-namespace protobunny::inspectproto {
+namespace protobunny {
 
-using ::google::protobuf::DescriptorDatabase;
-
-bool ProcessInputPaths(std::vector<std::string> input_params,
-                       ProtobunnySourceTree* source_tree,
-                       DescriptorDatabase* fallback_database,
-                       std::vector<std::string>* virtual_files);
-
-using namespace ::google::protobuf::compiler;
-using namespace ::google::protobuf::io;
-using namespace ::google::protobuf;
+using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::Message;
+using ::google::protobuf::io::ErrorCollector;
 
 // If the importer encounters problems while trying to import the proto files,
 // it reports them to a MultiFileErrorCollector.
@@ -55,10 +53,7 @@ class MultiFileErrorCollector {
 
   ABSL_DEPRECATED("Use RecordWarning")
   virtual void AddWarning(const std::string& filename, int line, int column,
-                          const std::string& message) {
-    std::cerr << "warning: " << filename << ":" << line << ":" << column << ": "
-              << message;
-  }
+                          const std::string& message) {}
 };
 
 // A MultiFileErrorCollector that prints errors to stderr.
@@ -142,4 +137,5 @@ class ErrorPrinter : public MultiFileErrorCollector,
   bool found_warnings_;
 };
 
-}  // namespace protobunny::inspectproto
+}  // namespace protobunny
+
