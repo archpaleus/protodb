@@ -101,8 +101,8 @@ static inline bool ContainsParentReference(absl::string_view path) {
 static bool ApplyMapping(absl::string_view filename,
                          absl::string_view old_prefix,
                          absl::string_view new_prefix, std::string* result) {
-  ABSL_LOG(INFO) << __FUNCTION__ << " " << filename << " " << old_prefix << " "
-                 << new_prefix;
+  ABSL_LOG(INFO) << __FUNCTION__ << " . " << filename << " " << old_prefix
+                 << " " << new_prefix;
   if (old_prefix.empty()) {
     // old_prefix matches any relative path.
     if (ContainsParentReference(filename)) {
@@ -172,8 +172,8 @@ void ProtobunnySourceTree::MapPath(absl::string_view virtual_path,
 
 ProtobunnySourceTree::DiskFileToVirtualFileResult
 ProtobunnySourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
-                                        std::string* virtual_file,
-                                        std::string* shadowing_disk_file) {
+                                            std::string* virtual_file,
+                                            std::string* shadowing_disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__ << " " << disk_file;
 
   const std::string canonical_disk_file = CanonicalizePath(disk_file);
@@ -206,7 +206,7 @@ ProtobunnySourceTree::DiskFileToVirtualFile(absl::string_view disk_file,
 }
 
 bool ProtobunnySourceTree::VirtualFileToDiskFile(absl::string_view virtual_file,
-                                             std::string* disk_file) {
+                                                 std::string* disk_file) {
   ABSL_LOG(INFO) << __FUNCTION__;
 
   std::unique_ptr<ZeroCopyInputStream> stream(
@@ -225,7 +225,8 @@ std::string ProtobunnySourceTree::GetLastErrorMessage() {
 
 ZeroCopyInputStream* ProtobunnySourceTree::OpenVirtualFile(
     absl::string_view virtual_file, std::string* disk_file) {
-  ABSL_LOG(INFO) << __FUNCTION__ << " " << virtual_file << " " << disk_file;
+  ABSL_LOG(INFO) << __FUNCTION__ << " virtual_file=" << virtual_file
+                 << " disk_file=" << (disk_file ? *disk_file : "(none)");
   if (virtual_file != CanonicalizePath(virtual_file) ||
       ContainsParentReference(virtual_file)) {
     // We do not allow importing of paths containing things like ".." or
@@ -266,7 +267,7 @@ ZeroCopyInputStream* ProtobunnySourceTree::OpenVirtualFile(
 
 ZeroCopyInputStream* ProtobunnySourceTree::OpenDiskFile(
     absl::string_view filename) {
-  ABSL_LOG(INFO) << __FUNCTION__ << " " << filename;
+  ABSL_LOG(INFO) << __FUNCTION__ << " filename=" << filename;
 
   struct stat sb;
   int ret = 0;

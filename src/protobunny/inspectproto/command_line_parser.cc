@@ -149,13 +149,13 @@ std::optional<CommandLineArgs> CommandLineParser::ParseArguments(
   while (!argview.empty()) {
     const auto argpair_or = ParseNext(argview);
     if (!argpair_or.ok()) {
-      std::cerr << argpair_or.status().message() << std::endl;
+      std::cerr << "argpair: " << argpair_or.status().message() << std::endl;
       return std::nullopt;
     }
 
     const auto& argpair = *argpair_or;
     if (argpair.first.empty()) {
-      // If there the first part of the pair is empty, this is just
+      // If the first part of the pair is empty, this is just
       // an input path, eg 'google/proto/descriptor.proto'.
       args.inputs.push_back(std::string(argpair.second));
     } else {

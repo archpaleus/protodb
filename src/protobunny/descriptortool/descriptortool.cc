@@ -53,6 +53,7 @@ struct DescriptorTool {
     }
   }
 
+  // Adds each FileDescriptor to a descriptor database.
   void AddToSimpleDescriptorDatabase(
       SimpleDescriptorDatabase* database,
       std::vector<const FileDescriptor*> file_descriptors) {

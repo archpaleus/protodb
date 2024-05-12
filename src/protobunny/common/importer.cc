@@ -16,6 +16,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
+#include "fmt/core.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
@@ -64,15 +65,21 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
         ABSL_LOG(FATAL) << "Can't handle input paths with more than one "
                            "virtual path separator: "
                         << input_param;
+        // console.fatal(
+        //     fmt::format("Can't handle input paths with more than one virtual "
+        //                 "path separator: {}",
+        //                 input_param));
       }
 
       if (path_parts[0].empty()) {
-        // This is a virtual path
+        // This is a path starts with '//' and can be treated as a virtual path
+        // against all known proto paths.
         input_files.push_back({.virtual_path = std::string(path_parts[1]),
                                .input_path = input_param});
       } else if (path_parts[1].empty()) {
         // This is a proto path on disk that virtual paths may reference.
-        // Make sure that it exist on disk first.
+        // Make sure that the path exists on disk first; then add it as
+        // an input root.
         if (!DirectoryExists(input_param)) {
           std::cerr << "error: Unable to find import path: " << input_param
                     << std::endl;
@@ -88,7 +95,7 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
         }
 
         const std::string disk_path =
-            absl::StrCat(path_parts[0], "/", path_parts[1]);
+            fmt::format("{}/{}", path_parts[0], path_parts[1]);
         const std::string virtual_path = std::string(path_parts[1]);
         ABSL_LOG(INFO) << absl::StrCat("add mapped disk file ", input_param,
                                        " -> ", virtual_path);
@@ -109,7 +116,7 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
                                .input_path = input_param});
       }
     } else {
-      //ABSL_LOG(INFO) << "old style input: " << input_param;
+      ABSL_LOG(INFO) << "old style input: " << input_param;
       ambigous_input_files.push_back(input_param);
     }
   }
@@ -117,6 +124,7 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
   // We need to add all virtual path roots before we add the ambiguous
   // file paths.
   for (const auto& input_root : input_roots) {
+    ABSL_LOG(INFO) << "adding input: " << input_root.virtual_path;
     source_tree->AddInputRoot(input_root);
   }
 
@@ -159,13 +167,14 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
   }
 
   for (const auto& input_file : input_files) {
-    ABSL_LOG(INFO) << " input file : " << input_file.disk_path << " -> "
-                   << input_file.virtual_path << std::endl;
+    ABSL_LOG(INFO) << " input file : disk_path=" << input_file.disk_path
+                   << " -> virtual_path=" << input_file.virtual_path << std::endl;
     if (!input_file.virtual_path.empty()) {
 #if 0
       source_tree->MapPath(input_file.virtual_path, input_file.disk_path);
 #endif
       virtual_files->push_back(input_file.virtual_path);
+      ABSL_LOG(INFO) << "  added virtual file to list " << std::endl;
     }
     source_tree->AddInputFile(input_file);
   }
@@ -175,4 +184,4 @@ bool ProcessInputPaths(std::vector<std::string> input_params,
   return true;
 }
 
-}  // namespace protobunny::inspectproto
+}  // namespace protobunny

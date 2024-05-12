@@ -35,6 +35,7 @@ cc_library(
     strip_include_prefix = "",
     deps = [
         ":source_tree",
+        "@fmt//:fmt",
     ],
 )
 
