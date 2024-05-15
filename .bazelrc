@@ -3,8 +3,11 @@ common --enable_bzlmod
 #common --registry=https://raw.githubusercontent.com/archpaleus/bazel-central-registry/main/
 #common --registry=https://bcr.bazel.build
 
+query --keep_going
+
 build --nocheck_visibility
 build --cxxopt=-std=c++20 --host_cxxopt=-std=c++20
+build --verbose_failures
 
 build:asan  --strip=never
 build:asan  --copt="-Wno-macro-redefined"
@@ -14,3 +17,7 @@ build:asan  --copt="-fno-omit-frame-pointer"
 build:asan  --copt="-fsanitize=address"
 build:asan  --copt="-DADDRESS_SANITIZER"
 build:asan  --linkopt="-fsanitize=address"
+
+build:opt -c opt
+build:opt --copt=-DABSL_LOGGING=OFF
+build:opt --copt=-DABSL_MIN_LOG_LEVEL=99
