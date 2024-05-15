@@ -246,7 +246,7 @@ struct DescriptorTool {
 
     // Load any .proto files given from the command line.
     if (args.inputs.size() > 1) {
-      std::vector<std::string> proto_files(args.inputs.begin() + 1,
+      std::vector<std::string> proto_files(args.inputs.begin(),
                                            args.inputs.end());
       for (const auto& f : proto_files) console.print(f);
       ImportProtoFilesToSimpleDatabase(console, simpledb.get(), proto_files);
