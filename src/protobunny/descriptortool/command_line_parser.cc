@@ -12,6 +12,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/log/absl_check.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/str_cat.h"
 
 namespace protobunny::descriptortool {
 

@@ -6,7 +6,7 @@ cc_library(
     deps = [
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:initialize",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
     ],
 )
 

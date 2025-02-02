@@ -300,7 +300,7 @@ struct InspectProto {
 
 int Run(int argc, char* argv[]) {
   InspectProto inspect_proto;
-  inspect_proto.Run(argc, argv);
+  return inspect_proto.Run(argc, argv);
 }
 
 }  // namespace protobunny::inspectproto

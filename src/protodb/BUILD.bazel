@@ -11,7 +11,7 @@ cc_library(
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
     ],
 )
 
@@ -34,7 +34,7 @@ cc_library(
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
         "@com_google_protobuf//src/google/protobuf/compiler:importer",
     ],
 )
@@ -62,7 +62,7 @@ cc_library(
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
         "@com_google_protobuf//src/google/protobuf/compiler:importer",
     ],
 )
@@ -72,7 +72,7 @@ cc_library(
     deps = [
         ":commands",
         "@com_google_absl//absl/log:initialize",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
     ],
 )
 

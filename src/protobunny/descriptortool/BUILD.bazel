@@ -16,7 +16,7 @@ cc_library(
     deps = [
         "//src/console",
         "//src/protobunny/common",
-        "@com_google_protobuf//src/google/protobuf:protobuf_nowkt",
+        "@com_google_protobuf//src/google/protobuf",
     ],
 )
 

@@ -14,6 +14,7 @@ descriptortool dump extensions —- proto//**/*.proto  # Shows all extensions pe
 ```
 descriptortool deps my/file.proto —- proto//**/*.proto
 descriptortool deps my.package.MyProto —- proto//**/*.proto
+descriptortool deps my.package.MyProto [ descriptor.pb proto//**/*.proto ]
 ```
 
 

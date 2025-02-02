@@ -10,7 +10,7 @@ Describe the wire data for a binary-encoded proto.
 If no message type is provided then the data will simply describe
 the wire types.
 The tool displays the offest of every tag, along with the bytes that were read
-for the tag and field value. If the tag specifies a length-ecoded type, then the
+for the tag and field value. If the tag specifies a length-encoded type, then the
 bytes will show the parsed length, but not the data itself.
 
 ```
@@ -25,11 +25,16 @@ cat mypb.binproto | inspectproto
 00004d                   [18 01]          3 : <varint> = 1
 ```
 
+Input can be provided as a command line arg as well.
+```
+cat mypb.binproto | inspectproto
+```
+
 A type can be provided to give better information how to present the message. By default
 we will have descriptor.proto available and all google well known types.
 
 ```
-cat mypb.binproto | inspectproto google.protobuf.FileDescriptorSet
+inspectproto -f mypb.binproto -t google.protobuf.FileDescriptorSet
 000000                [0a e0 0a]    1 : message FileDescriptorProto file:  (1376 bytes)
 000003                   [0a 21]      1 : string name = "hankings/stars/stars_common.proto"
 000026                   [12 0e]      2 : string package = "hankings.stars"
@@ -39,15 +44,19 @@ cat mypb.binproto | inspectproto google.protobuf.FileDescriptorSet
 
 When a descriptor database is given, we will always make a best guess regarding the
 protobuf type, and if found we'll use that.
-
 ```
-cat mypb.binproto | inspectproto -i descriptor_set.bin
+inspectproto -f mypb.binproto -i descriptor_set.bin
 000000                [0a e0 0a]    1 : message FileDescriptorProto file:  (1376 bytes)
 000003                   [0a 21]      1 : string name = "hankings/stars/stars_common.proto"
 000026                   [12 0e]      2 : string package = "hankings.stars"
 000036                [22 ff 01]      4 : message DescriptorProto message_type:  (255 bytes)
 000039                   [0a 0a]        1 : string name = "starsNames"
 ...
+```
+
+Descriptors can also be provided within square brackets to load multiple descriptors.
+```
+cat mypb.binproto | inspectproto [ descriptor_set.bin proto//**/*.proto ]
 ```
 
 The tooling can inspect a snippet of binary data starting at an offset.
@@ -62,7 +71,7 @@ cat mypb.binproto | inspectproto --offset 0x36
 The tooling can inspect a range of binary data
 
 ```
-cat mypb.binproto | inspectproto 0036..00135
+cat mypb.binproto | inspectproto 0x36..0x135
 000036                [22 ff 01]      4 : message DescriptorProto message_type:  (255 bytes)
 000039                   [0a 0a]        1 : string name = "starsNames"
 ...
@@ -96,7 +105,7 @@ very good validation and need to resort to validity checks across a span of
 data or multiple bytes. In either case, we need enough data to produce a valid check.
 
 ```
-cat invalid_data mypb.binproto | inspectproto --skip_invalid
+cat invalid_data mypb.binproto | inspectproto --scan
 000000                [0a e0 0a]    <invalid data>  (26 bytes)
 00001a                [0a e0 0a]    1 : message FileDescriptorProto file:  (1376 bytes)
 ```
@@ -111,7 +120,7 @@ cat invalid_data mypb.binproto | inspectproto --skip_invalid
     - We'd probably want something like 16 bytes. The larger the window size the more expensive the checks.
       inspecting
 
-# Args
+## Args
 
 -i, --descriptor_set_in
 -g, --guess
@@ -119,7 +128,11 @@ cat invalid_data mypb.binproto | inspectproto --skip_invalid
 
 -x, --extract <range>
 
-# Commands
+
+
+# Old
+
+## Commands
 
 ```
 inspectproto
